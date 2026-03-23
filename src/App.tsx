@@ -534,11 +534,12 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
     // Stop any current speech
     window.speechSynthesis.cancel();
     
-    // Combine context and question if context exists
-    const fullText = context ? `${context}. ${text}` : text;
+    // Only read the context (paragraph) if it exists, otherwise read the text (question)
+    // This allows the student to focus on the listening part while reading the question
+    const textToSpeak = context || text;
     
     // Clean text: remove underscores and dots that might be read as "underscore underscore..."
-    const cleanText = fullText.replace(/_{2,}/g, '').replace(/\.{3,}/g, '');
+    const cleanText = textToSpeak.replace(/_{2,}/g, '').replace(/\.{3,}/g, '');
     
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = 'en-US';
@@ -1215,7 +1216,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                                       {speakingIndex === index ? <Square className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                                     </button>
                                   )}
-                                  <span>{isListeningMode && !isSubmitted ? "Listen and answer..." : q.question}</span>
+                                  <span>{q.question}</span>
                                 </h3>
 
                                 <div className="flex-grow">
@@ -1293,7 +1294,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                                         {speakingIndex === index ? <Square className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                                       </button>
                                     )}
-                                    <span>{isListeningMode && !isAnswered ? "Listen and answer..." : q.question}</span>
+                                    <span>{q.question}</span>
                                   </h3>
 
                                   <div className="flex-grow">
@@ -1654,7 +1655,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
           </div>
           <div className="flex items-center gap-3">
             <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] rounded font-mono font-bold border border-slate-200">
-              v1.0.013
+              v1.0.014
             </span>
             <div className="flex gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>

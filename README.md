@@ -156,3 +156,7 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - **History Session Summary**: Added a visual summary of correct and wrong answers to each session header in the History tab.
 - **IELTS-style Listening**: Enhanced listening comprehension to include a context paragraph (dialogue or story) before the question, mimicking standard English exams like IELTS.
 - **Version Update**: Updated application version to 1.0.013.
+
+## Version 1.0.014 Updates
+- **Focused Listening Experience**: In listening mode, the audio now only reads the context paragraph (dialogue or story). The question itself is displayed on the screen but not read aloud, allowing students to focus their listening effort on the relevant information.
+- **Version Update**: Updated application version to 1.0.014.
