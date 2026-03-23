@@ -736,11 +736,31 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
     generatedQuestions.forEach((q, index) => {
       const uAnswer = userAnswers[index] || '';
       const normalize = (str: string) => str.toLowerCase().replace(/[.,!?]/g, '').trim();
+      const normalizeRewrite = (str: string) => {
+        return str
+          .toLowerCase()
+          .replace(/[.,!?]/g, '')
+          .replace(/\s+/g, ' ')
+          .replace(/\bdo not\b/g, "don't")
+          .replace(/\bdoes not\b/g, "doesn't")
+          .replace(/\bdid not\b/g, "didn't")
+          .replace(/\bis not\b/g, "isn't")
+          .replace(/\bare not\b/g, "aren't")
+          .replace(/\bhave not\b/g, "haven't")
+          .replace(/\bhas not\b/g, "hasn't")
+          .replace(/\bwill not\b/g, "won't")
+          .replace(/\bwould not\b/g, "wouldn't")
+          .replace(/\bcannot\b/g, "can't")
+          .trim();
+      };
       
       const isMCQ = q.choices && q.choices.length > 0;
+      const isRewrite = q.type === 'Rewrite';
       const isCorrect = isMCQ 
         ? uAnswer === q.answer
-        : normalize(uAnswer) === normalize(q.answer);
+        : isRewrite
+          ? normalizeRewrite(uAnswer) === normalizeRewrite(q.answer)
+          : normalize(uAnswer) === normalize(q.answer);
       
       if (isCorrect) correctCount++;
       
@@ -776,7 +796,7 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
     
     setHistory(prev => [...newHistory, ...prev]);
 
-    const percentage = (correctCount / generatedQuestions.length) * 100;
+    const percentage = Math.round((correctCount / generatedQuestions.length) * 100);
     if (percentage >= 90) {
       confetti({
         particleCount: 150,
@@ -1941,6 +1961,36 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
                             Practice Again
                           </button>
                         </div>
+                        {Object.keys(feedbacks).length > 0 && (
+                          <div className="mt-8 p-6 bg-slate-50 rounded-xl border border-slate-200 text-left">
+                            <h3 className="text-xl font-bold mb-4">Detailed Results</h3>
+                            <p className="mb-4 text-slate-600">Completion: {Math.round((sessionScore / generatedQuestions.length) * 100)}%</p>
+                            {Object.keys(feedbacks).filter(idx => !feedbacks[parseInt(idx)].isCorrect).length > 0 && (
+                              <div className="mt-4">
+                                <h4 className="font-bold text-rose-700 mb-3">Wrong Answers:</h4>
+                                <div className="space-y-3">
+                                  {Object.keys(feedbacks).filter(idx => !feedbacks[parseInt(idx)].isCorrect).map(idx => {
+                                    const q = generatedQuestions[parseInt(idx)];
+                                    return (
+                                      <div key={idx} className="p-4 bg-white rounded-lg border border-rose-100 shadow-sm">
+                                        <p className="font-medium text-slate-800 mb-2">{q.question}</p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                                          <p className="text-rose-600"><span className="font-bold">Your Answer:</span> {userAnswers[parseInt(idx)] || '(Empty)'}</p>
+                                          <p className="text-emerald-600"><span className="font-bold">Correct Answer:</span> {q.answer}</p>
+                                        </div>
+                                        {q.explanation && (
+                                          <p className="mt-2 text-xs text-slate-500 italic">
+                                            <span className="font-bold not-italic text-slate-600">Explanation:</span> {q.explanation}
+                                          </p>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </motion.div>
@@ -2173,7 +2223,7 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
           </div>
           <div className="flex items-center gap-3">
             <span className={`px-2 py-0.5 ${isDarkMode ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-500 border-slate-200'} text-[10px] rounded font-mono font-bold border`}>
-              v1.0.028
+              v1.0.030
             </span>
             <div className="flex gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
