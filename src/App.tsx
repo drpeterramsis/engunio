@@ -438,11 +438,11 @@ export default function App() {
     
     let apiKey = '';
     try {
-      apiKey = typeof process !== 'undefined' && process.env ? process.env.GEMINI_API_KEY || '' : '';
+      apiKey = typeof process !== 'undefined' && process.env ? process.env.OPENROUTER_API_KEY || '' : '';
     } catch (e) {}
     if (!apiKey) {
       try {
-        apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+        apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || '';
       } catch (e) {}
     }
 
@@ -545,11 +545,11 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
 
     let apiKey = '';
     try {
-      apiKey = typeof process !== 'undefined' && process.env ? process.env.GEMINI_API_KEY || '' : '';
+      apiKey = typeof process !== 'undefined' && process.env ? process.env.OPENROUTER_API_KEY || '' : '';
     } catch (e) {}
     if (!apiKey) {
       try {
-        apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+        apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || '';
       } catch (e) {}
     }
 
@@ -2140,7 +2140,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
           </div>
           <div className="flex items-center gap-3">
             <span className={`px-2 py-0.5 ${isDarkMode ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-500 border-slate-200'} text-[10px] rounded font-mono font-bold border`}>
-              v1.0.020
+              v1.0.021
             </span>
             <div className="flex gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -2255,7 +2255,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                               </div>
                               <div className="space-y-4">
                                 {attempts.map((a: any, idx: number) => (
-                                  <div key={idx} className="text-sm">
+                                  <div key={idx} className="">
                                     <p className="font-medium mb-1">{idx + 1}. {a.question}</p>
                                     <p className={`${a.isCorrect ? 'text-emerald-600' : 'text-rose-600'} flex gap-2`}>
                                       <span>Your Answer: {a.userAnswer || '(No answer)'}</span>
@@ -2278,7 +2278,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                             {q.choices && q.choices.length > 0 && (
                               <div className="grid grid-cols-2 gap-2 mb-3">
                                 {q.choices.map((c: any, cIdx: number) => (
-                                  <div key={cIdx} className={`text-sm p-2 rounded border ${
+                                  <div key={cIdx} className={`p-2 rounded border ${
                                     q.userAnswer === c 
                                       ? ((config.isTeacherMode || isSubmitted) 
                                           ? (q.isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200') 
@@ -2422,7 +2422,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                       {q.choices && q.choices.length > 0 && (
                         <div className="grid grid-cols-2 gap-2 mb-3">
                           {q.choices.map((c: any, cIdx: number) => (
-                            <div key={cIdx} className={`text-sm p-2 rounded border ${q.userAnswer === c ? (q.isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200') : 'border-slate-100'}`}>
+                            <div key={cIdx} className={`p-2 rounded border ${q.userAnswer === c ? (q.isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200') : 'border-slate-100'}`}>
                               {String.fromCharCode(65 + cIdx)}. {c}
                             </div>
                           ))}
