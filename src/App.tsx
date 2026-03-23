@@ -252,8 +252,23 @@ export default function App() {
     types: ['MCQ'],
     difficulty: 'Medium',
     count: 1,
-    useAcademyLibrary: false
+    useAcademyLibrary: false,
+    speechVoice: '',
+    speechRate: 1.0
   });
+
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  
+  useEffect(() => {
+    const loadVoices = () => {
+      const availableVoices = window.speechSynthesis.getVoices();
+      setVoices(availableVoices);
+    };
+    loadVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }, []);
 
   const [collapsedSessions, setCollapsedSessions] = useState<Record<string, boolean>>({});
 
@@ -367,6 +382,12 @@ export default function App() {
 
     const savedTypes = localStorage.getItem('configTypes');
     if (savedTypes) setConfig(prev => ({ ...prev, types: JSON.parse(savedTypes) }));
+
+    const savedVoice = localStorage.getItem('configVoice');
+    if (savedVoice) setConfig(prev => ({ ...prev, speechVoice: savedVoice }));
+
+    const savedRate = localStorage.getItem('configRate');
+    if (savedRate) setConfig(prev => ({ ...prev, speechRate: parseFloat(savedRate) }));
   }, []);
 
   useEffect(() => { localStorage.setItem('userName', userName); }, [userName]);
@@ -375,6 +396,8 @@ export default function App() {
   useEffect(() => { localStorage.setItem('theme', theme); }, [theme]);
   useEffect(() => { localStorage.setItem('configRules', JSON.stringify(config.rules)); }, [config.rules]);
   useEffect(() => { localStorage.setItem('configTypes', JSON.stringify(config.types)); }, [config.types]);
+  useEffect(() => { localStorage.setItem('configVoice', config.speechVoice); }, [config.speechVoice]);
+  useEffect(() => { localStorage.setItem('configRate', config.speechRate.toString()); }, [config.speechRate]);
 
   // Apply theme class to body to ensure it cascades properly
   useEffect(() => {
@@ -543,6 +566,15 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
     
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = 'en-US';
+    
+    // Set voice if selected
+    if (config.speechVoice) {
+      const selectedVoice = voices.find(v => v.voiceURI === config.speechVoice);
+      if (selectedVoice) utterance.voice = selectedVoice;
+    }
+    
+    // Set rate
+    utterance.rate = config.speechRate;
     
     utterance.onstart = () => setSpeakingIndex(index);
     utterance.onend = () => setSpeakingIndex(null);
@@ -1025,6 +1057,41 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                     onChange={e => setConfig({...config, count: Math.max(1, Math.min(10, parseInt(e.target.value) || 1))})}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 shadow-sm focus:border-[var(--theme-primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-primary-500)] bg-white text-sm"
                   />
+                </div>
+              </div>
+
+              {/* Voice & Speed Controls */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Voice</label>
+                  <select 
+                    value={config.speechVoice} 
+                    onChange={e => setConfig({...config, speechVoice: e.target.value})}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 shadow-sm focus:border-[var(--theme-primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-primary-500)] bg-white text-sm"
+                  >
+                    <option value="">Default Voice</option>
+                    {voices.map(voice => (
+                      <option key={voice.voiceURI} value={voice.voiceURI}>
+                        {voice.name} ({voice.lang})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Speed: {config.speechRate}x</label>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-[10px] text-slate-400">0.5x</span>
+                    <input 
+                      type="range" 
+                      min="0.5" 
+                      max="2" 
+                      step="0.1"
+                      value={config.speechRate}
+                      onChange={e => setConfig({...config, speechRate: parseFloat(e.target.value)})}
+                      className="flex-grow h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[var(--theme-primary-600)]"
+                    />
+                    <span className="text-[10px] text-slate-400">2x</span>
+                  </div>
                 </div>
               </div>
 
@@ -1655,7 +1722,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
           </div>
           <div className="flex items-center gap-3">
             <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] rounded font-mono font-bold border border-slate-200">
-              v1.0.014
+              v1.0.015
             </span>
             <div className="flex gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>

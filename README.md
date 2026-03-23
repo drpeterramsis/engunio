@@ -160,3 +160,9 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 ## Version 1.0.014 Updates
 - **Focused Listening Experience**: In listening mode, the audio now only reads the context paragraph (dialogue or story). The question itself is displayed on the screen but not read aloud, allowing students to focus their listening effort on the relevant information.
 - **Version Update**: Updated application version to 1.0.014.
+
+## Version 1.0.015 Updates
+- **Voice Selection**: Users can now choose from a list of available system voices for text-to-speech, including female voices if available on the device.
+- **Speech Speed Control**: Added a speed slider (0.5x to 2.0x) to control the rate of listening comprehension audio.
+- **Persistent Settings**: Voice and speed preferences are automatically saved to local storage and restored on next visit.
+- **Version Update**: Updated application version to 1.0.015.
