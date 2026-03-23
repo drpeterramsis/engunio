@@ -3,8 +3,9 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { Upload, User, CheckCircle, XCircle, History, Trophy, Loader2, Play, FileJson, ArrowRight, Settings, Rocket, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-// Initialize Gemini API
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Initialize Gemini API (safely handles both AI Studio and Vercel environments)
+const apiKey = typeof process !== 'undefined' && process.env ? process.env.GEMINI_API_KEY : import.meta.env.VITE_GEMINI_API_KEY;
+const ai = new GoogleGenAI({ apiKey: apiKey || '' });
 
 const questionSchema = {
   type: Type.OBJECT,
