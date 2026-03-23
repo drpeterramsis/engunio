@@ -192,6 +192,11 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - **Enhanced Print Styling**: Applied global print-specific CSS to ensure clean, professional-looking reports and exams with proper margins and color adjustments.
 - **Version Update**: Updated application version to 1.0.018 across all configuration files and the UI footer.
 
+## Version 1.0.024 Updates
+- **Question Tagging**: Replaced the generic "Mixed Practice" tag with the specific question type (e.g., MCQ, Rewrite) for better clarity, using a new `type` field in the question data.
+- **Prompt Refinement**: Updated AI generation prompt to enforce inclusion of the `type` field in JSON output.
+- **Version Update**: Updated application version to 1.0.024 across all configuration files and the UI footer.
+
 ## Version 1.0.023 Updates
 - **Robust JSON Parsing**: Implemented a robust JSON extraction and parsing utility to handle OpenRouter model responses, ensuring stability even when models include conversational filler.
 - **Prompt Optimization**: Refined system instructions to enforce strict JSON-only output for OpenRouter models.

@@ -58,6 +58,7 @@ interface Question {
   explanation: string;
   rule: string;
   difficulty: string;
+  type: string;
 }
 
 // Categorized and sorted grammar rules
@@ -481,7 +482,7 @@ export default function App() {
 You are an expert English teacher and assessment creator. ${contextInfo}
 Generate EXACTLY ${config.count} English learning question(s) based on the following parameters:
 - Rules to cover: ${config.rules.join(', ')} (distribute questions among these rules)
-- Question Types: ${config.types.join(', ')} (distribute questions among these types)
+- Question Types: ${config.types.join(', ')} (distribute questions among these types). IMPORTANT: Include a 'type' field in each question object in the JSON output, matching the specific question type.
 - Difficulty: ${config.difficulty}
 ${isListeningMode ? "IMPORTANT: These are IELTS-style listening questions. For each question, you MUST provide a 'context' field which is a small paragraph or a series of sentences (like a dialogue or a short story) that the student will listen to. The 'question' field should then be a specific question about that context. CRITICAL: The 'context' is what the student HEARS, and the 'question' is what they SEE. Do NOT include any underscores, dots, or placeholders like '_ _ _' in the 'context' or 'question' fields. The student will listen to the context and then answer the question. " : ""}
 
@@ -1579,7 +1580,7 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
                                     <span className={`px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wider border ${
                                       isDarkMode ? 'bg-slate-700 text-slate-300 border-slate-600' : 'bg-slate-100 text-slate-600 border-slate-200'
                                     }`}>
-                                      {config.types.length === 1 ? config.types[0] : 'Mixed Practice'}
+                                      {q.type || 'Practice'}
                                     </span>
                                     {isFlagged && (
                                       <span className="flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-full uppercase tracking-wider border border-amber-200">
@@ -2158,7 +2159,7 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
           </div>
           <div className="flex items-center gap-3">
             <span className={`px-2 py-0.5 ${isDarkMode ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-500 border-slate-200'} text-[10px] rounded font-mono font-bold border`}>
-              v1.0.023
+              v1.0.024
             </span>
             <div className="flex gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
