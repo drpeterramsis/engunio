@@ -1,8 +1,9 @@
 /// <reference types="vite/client" />
 import React, { useState, useEffect, useMemo } from 'react';
 import { GoogleGenAI, Type } from '@google/genai';
-import { User, CheckCircle, XCircle, History, Trophy, Loader2, Play, ArrowRight, Settings, Rocket, Trash2, ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { User, CheckCircle, XCircle, History, Trophy, Loader2, Play, ArrowRight, Settings, Rocket, Trash2, ChevronDown, ChevronUp, Search, Award, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import confetti from 'canvas-confetti';
 
 const questionSchema = {
   type: Type.OBJECT,
@@ -155,11 +156,15 @@ export default function App() {
   };
 
   const [generatedQuestions, setGeneratedQuestions] = useState<Question[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
   const [loading, setLoading] = useState(false);
-  const [userAnswer, setUserAnswer] = useState('');
-  const [feedback, setFeedback] = useState<{ isCorrect: boolean; explanation: string } | null>(null);
+  
+  const [activeTab, setActiveTab] = useState<'setup' | 'practice' | 'history'>('setup');
+  const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
+  const [feedbacks, setFeedbacks] = useState<Record<number, { isCorrect: boolean; explanation: string }>>({});
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [sessionScore, setSessionScore] = useState(0);
+  const [showCertificate, setShowCertificate] = useState(false);
   
   const [theme, setTheme] = useState('indigo');
   const [showSettings, setShowSettings] = useState(false);
@@ -217,10 +222,13 @@ export default function App() {
     setErrorMsg('');
     setLoading(true);
     setGeneratedQuestions([]);
-    setCurrentQuestionIndex(0);
     setCurrentSessionId(Date.now().toString());
-    setFeedback(null);
-    setUserAnswer('');
+    setUserAnswers({});
+    setFeedbacks({});
+    setIsSubmitted(false);
+    setSessionScore(0);
+    setShowCertificate(false);
+    setActiveTab('practice');
 
     try {
       const ai = new GoogleGenAI({ apiKey });
@@ -267,56 +275,79 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
     }
   };
 
-  const currentQuestion = generatedQuestions[currentQuestionIndex];
-  const isMCQ = currentQuestion?.choices && currentQuestion.choices.length > 0;
+  const handleSubmitAll = () => {
+    let correctCount = 0;
+    const newFeedbacks: Record<number, { isCorrect: boolean; explanation: string }> = {};
+    const newHistory: Attempt[] = [];
+    const sessionId = currentSessionId || Date.now().toString();
 
-  const handleSubmit = () => {
-    if (!currentQuestion || !userAnswer.trim()) return;
+    generatedQuestions.forEach((q, index) => {
+      const uAnswer = userAnswers[index] || '';
+      const normalize = (str: string) => str.toLowerCase().replace(/[.,!?]/g, '').trim();
+      
+      const isMCQ = q.choices && q.choices.length > 0;
+      const isCorrect = isMCQ 
+        ? uAnswer === q.answer
+        : normalize(uAnswer) === normalize(q.answer);
+      
+      if (isCorrect) correctCount++;
+      
+      newFeedbacks[index] = {
+        isCorrect,
+        explanation: q.explanation
+      };
 
-    const normalize = (str: string) => str.toLowerCase().replace(/[.,!?]/g, '').trim();
-    
-    const isCorrect = isMCQ 
-      ? userAnswer === currentQuestion.answer
-      : normalize(userAnswer) === normalize(currentQuestion.answer);
-
-    setFeedback({
-      isCorrect,
-      explanation: currentQuestion.explanation
+      newHistory.push({
+        id: Math.random().toString(36).substring(7),
+        sessionId,
+        question: q.question,
+        type: config.types.length === 1 ? config.types[0] : 'Mixed',
+        rule: q.rule,
+        difficulty: q.difficulty,
+        userAnswer: uAnswer,
+        correctAnswer: q.answer,
+        isCorrect,
+        explanation: q.explanation,
+        timestamp: Date.now()
+      });
     });
 
-    const newScore = {
-      total: score.total + 1,
-      correct: score.correct + (isCorrect ? 1 : 0)
-    };
-    setScore(newScore);
+    setFeedbacks(newFeedbacks);
+    setIsSubmitted(true);
+    setSessionScore(correctCount);
+    
+    setScore(prev => ({
+      correct: prev.correct + correctCount,
+      total: prev.total + generatedQuestions.length
+    }));
+    
+    setHistory(prev => [...newHistory, ...prev]);
 
-    const attempt: Attempt = {
-      id: Date.now().toString(),
-      sessionId: currentSessionId || Date.now().toString(),
-      question: currentQuestion.question,
-      type: config.types.length === 1 ? config.types[0] : 'Mixed',
-      rule: currentQuestion.rule,
-      difficulty: currentQuestion.difficulty,
-      userAnswer,
-      correctAnswer: currentQuestion.answer,
-      isCorrect,
-      explanation: currentQuestion.explanation,
-      timestamp: Date.now()
-    };
-
-    setHistory([attempt, ...history]);
+    const percentage = (correctCount / generatedQuestions.length) * 100;
+    if (percentage >= 90) {
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#4f46e5', '#10b981', '#f59e0b', '#ec4899']
+      });
+    }
   };
 
-  const handleNextQuestion = () => {
-    if (currentQuestionIndex < generatedQuestions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-      setFeedback(null);
-      setUserAnswer('');
+  const handleShareCertificate = async () => {
+    const percentage = Math.round((sessionScore / generatedQuestions.length) * 100);
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'My ENGUNIO Certificate',
+          text: `I just scored ${percentage}% on my English Grammar Assessment on ENGUNIO!`,
+          url: window.location.href,
+        });
+      } catch (err) {
+        console.error('Error sharing', err);
+      }
     } else {
-      setGeneratedQuestions([]);
-      setCurrentQuestionIndex(0);
-      setFeedback(null);
-      setUserAnswer('');
+      alert('Sharing is not supported on this browser.');
     }
   };
 
@@ -365,21 +396,48 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
         </div>
       </header>
 
-      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
+      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         
-        {/* Left Column: Configuration */}
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-          className="lg:col-span-4 space-y-6"
-        >
-          
-          {/* Configuration Card */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <h2 className="text-lg font-semibold mb-4 text-slate-800">Setup Practice</h2>
-            
-            <div className="space-y-4">
+        {/* Tabs Navigation */}
+        <div className="flex justify-center mb-8 border-b border-slate-200">
+          <div className="flex gap-8">
+            <button 
+              onClick={() => setActiveTab('setup')} 
+              className={`pb-4 font-medium text-sm transition-colors relative ${activeTab === 'setup' ? 'text-[var(--theme-primary-600)]' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Setup
+              {activeTab === 'setup' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--theme-primary-600)]" />}
+            </button>
+            <button 
+              onClick={() => setActiveTab('practice')} 
+              className={`pb-4 font-medium text-sm transition-colors relative ${activeTab === 'practice' ? 'text-[var(--theme-primary-600)]' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Practice
+              {activeTab === 'practice' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--theme-primary-600)]" />}
+            </button>
+            <button 
+              onClick={() => setActiveTab('history')} 
+              className={`pb-4 font-medium text-sm transition-colors relative ${activeTab === 'history' ? 'text-[var(--theme-primary-600)]' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              History
+              {activeTab === 'history' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--theme-primary-600)]" />}
+            </button>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto">
+          {/* Setup Tab */}
+          {activeTab === 'setup' && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-6"
+            >
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 className="text-lg font-semibold mb-4 text-slate-800">Setup Practice</h2>
+                
+                <div className="space-y-4">
               {/* Rules Selection (Collapsible) */}
               <div className="border border-slate-200 rounded-lg overflow-hidden">
                 <button 
@@ -792,6 +850,79 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
           </p>
         </div>
       </footer>
+
+      {/* Certificate Modal */}
+      <AnimatePresence>
+        {showCertificate && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-900/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white rounded-xl shadow-2xl max-w-3xl w-full p-8 md:p-12 border-8 border-double border-[var(--theme-primary-600)] relative text-center"
+            >
+              <button 
+                onClick={() => setShowCertificate(false)} 
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-full transition-colors"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+              
+              <div className="mb-8 flex justify-center">
+                <div className="w-20 h-20 bg-[var(--theme-primary-50)] rounded-full flex items-center justify-center">
+                  <Award className="w-10 h-10 text-[var(--theme-primary-600)]" />
+                </div>
+              </div>
+              
+              <h1 className="text-4xl md:text-5xl font-serif text-[var(--theme-primary-700)] mb-6">
+                Certificate of Achievement
+              </h1>
+              
+              <p className="text-lg text-slate-600 mb-4">This is proudly presented to</p>
+              
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mb-6 border-b-2 border-slate-200 inline-block pb-2 px-8">
+                {userName || 'English Learner'}
+              </h2>
+              
+              <p className="text-lg text-slate-600 mb-12 max-w-xl mx-auto leading-relaxed">
+                For successfully passing the English Grammar Assessment with an outstanding score of 
+                <strong className="text-[var(--theme-primary-600)] ml-1">{sessionScore}/{generatedQuestions.length}</strong> 
+                ({Math.round((sessionScore / generatedQuestions.length) * 100)}%).
+              </p>
+              
+              <div className="flex justify-between items-end mt-12 px-4 md:px-12">
+                <div className="text-left">
+                  <p className="border-t-2 border-slate-300 pt-2 text-sm font-medium text-slate-600 w-32 text-center">
+                    {new Date().toLocaleDateString()}
+                  </p>
+                  <p className="text-xs text-slate-400 text-center mt-1">Date</p>
+                </div>
+                <div className="text-right">
+                  <p className="border-t-2 border-slate-300 pt-2 text-sm font-medium text-slate-600 w-32 text-center">
+                    ENGUNIO
+                  </p>
+                  <p className="text-xs text-slate-400 text-center mt-1">Platform</p>
+                </div>
+              </div>
+              
+              <div className="mt-12 flex justify-center gap-4">
+                <button 
+                  onClick={handleShareCertificate}
+                  className="bg-[var(--theme-primary-600)] text-white py-3 px-8 rounded-lg font-medium hover:bg-[var(--theme-primary-700)] transition-colors flex items-center gap-2 shadow-sm"
+                >
+                  <Share2 className="w-5 h-5" />
+                  Share Certificate
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Settings Modal */}
       <AnimatePresence>
