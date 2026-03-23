@@ -192,8 +192,10 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - **Enhanced Print Styling**: Applied global print-specific CSS to ensure clean, professional-looking reports and exams with proper margins and color adjustments.
 - **Version Update**: Updated application version to 1.0.018 across all configuration files and the UI footer.
 
-## Version 1.0.022 Updates
+## Version 1.0.023 Updates
+- **Robust JSON Parsing**: Implemented a robust JSON extraction and parsing utility to handle OpenRouter model responses, ensuring stability even when models include conversational filler.
+- **Prompt Optimization**: Refined system instructions to enforce strict JSON-only output for OpenRouter models.
 - **API Key Fix**: Updated API key retrieval to prioritize `VITE_OPENROUTER_API_KEY` for client-side access, ensuring compatibility with environment variables.
 - **Printing Font Control**: Fixed print font size control to apply to all elements, including choices.
 - **Listening Comprehension Fix**: Restored and refined listening comprehension question generation.
-- **Version Update**: Updated application version to 1.0.022 across all configuration files and the UI footer.
+- **Version Update**: Updated application version to 1.0.023 across all configuration files and the UI footer.

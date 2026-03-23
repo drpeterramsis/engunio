@@ -496,6 +496,8 @@ INSTRUCTIONS:
 
 Previous mistakes to focus on (if any):
 ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mistake: ${h.userAnswer}`).join('\n')}
+
+IMPORTANT: You must return ONLY valid JSON. Do not include any conversational text, markdown formatting, or explanations. The output must be a single JSON object with a 'questions' array.
 `;
 
       setGenerationProgress(50);
@@ -508,7 +510,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "google/gemini-2.0-flash-001", // Or another model
+          model: "deepseek/deepseek-r1", // Using a model known for strict adherence
           messages: [{ role: "user", content: prompt }],
           response_format: { type: "json_object" }
         })
@@ -522,8 +524,22 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
       const content = result.choices[0].message.content;
       
       setGenerationProgress(80);
-      const data = JSON.parse(content);
-      if (!data.questions || data.questions.length === 0) {
+      
+      // Robust parsing
+      let data;
+      try {
+        data = JSON.parse(content);
+      } catch (e) {
+        // Try to extract JSON if surrounded by text
+        const match = content.match(/\{[\s\S]*\}/);
+        if (match) {
+          data = JSON.parse(match[0]);
+        } else {
+          throw new Error("Could not parse AI response as JSON.");
+        }
+      }
+      
+      if (!data.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
         throw new Error("No questions were returned by the AI.");
       }
       setGeneratedQuestions(data.questions);
@@ -583,7 +599,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "google/gemini-2.0-flash-001",
+          model: "deepseek/deepseek-r1",
           messages: [{ role: "user", content: prompt }]
         })
       });
@@ -2142,7 +2158,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
           </div>
           <div className="flex items-center gap-3">
             <span className={`px-2 py-0.5 ${isDarkMode ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-500 border-slate-200'} text-[10px] rounded font-mono font-bold border`}>
-              v1.0.022
+              v1.0.023
             </span>
             <div className="flex gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
