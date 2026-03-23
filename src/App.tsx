@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 import React, { useState, useEffect, useMemo } from 'react';
 import { GoogleGenAI, Type } from '@google/genai';
-import { User, CheckCircle, XCircle, History, Trophy, Loader2, Play, ArrowRight, Settings, Rocket, Trash2, ChevronDown, ChevronUp, Search, Award, Share2, MessageSquare, FileText, FileUp, Upload, BookOpen, Volume2, PlayCircle, Info, Sparkles, Calendar } from 'lucide-react';
+import { User, CheckCircle, XCircle, History, Trophy, Loader2, Play, ArrowRight, Settings, Rocket, Trash2, ChevronDown, ChevronUp, Search, Award, Share2, MessageSquare, FileText, FileUp, Upload, BookOpen, Volume2, PlayCircle, Info, Sparkles, Calendar, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 
@@ -325,6 +325,7 @@ export default function App() {
   const [isGeneratingLesson, setIsGeneratingLesson] = useState(false);
   // New state for v1.0.010
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
   
   const [theme, setTheme] = useState('indigo');
   const [showSettings, setShowSettings] = useState(false);
@@ -418,7 +419,7 @@ Generate EXACTLY ${config.count} English learning question(s) based on the follo
 - Rules to cover: ${config.rules.join(', ')} (distribute questions among these rules)
 - Question Types: ${config.types.join(', ')} (distribute questions among these types)
 - Difficulty: ${config.difficulty}
-${isListeningMode ? "IMPORTANT: These are listening questions. The 'question' field should be a professional, natural-sounding dialogue or a complete, meaningful sentence for the student to listen to and transcribe or answer. Avoid overly simple or isolated words. " : ""}
+${isListeningMode ? "IMPORTANT: These are listening questions. The 'question' field should be a professional, natural-sounding dialogue or a complete, meaningful sentence representing a 'small action' for the student to listen to. CRITICAL: Do NOT include any underscores, dots, or placeholders like '_ _ _' in the 'question' field as it will be read aloud. The student will transcribe what they hear or answer based on the audio. " : ""}
 
 INSTRUCTIONS:
 1. Generate EXACTLY ${config.count} question(s).
@@ -511,10 +512,26 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
     }
   };
 
-  const handleSpeak = (text: string) => {
-    const utterance = new SpeechSynthesisUtterance(text);
+  const handleSpeak = (text: string, index: number) => {
+    // Stop any current speech
+    window.speechSynthesis.cancel();
+    
+    // Clean text: remove underscores and dots that might be read as "underscore underscore..."
+    const cleanText = text.replace(/_{2,}/g, '').replace(/\.{3,}/g, '');
+    
+    const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = 'en-US';
+    
+    utterance.onstart = () => setSpeakingIndex(index);
+    utterance.onend = () => setSpeakingIndex(null);
+    utterance.onerror = () => setSpeakingIndex(null);
+    
     window.speechSynthesis.speak(utterance);
+  };
+
+  const handleStop = () => {
+    window.speechSynthesis.cancel();
+    setSpeakingIndex(null);
   };
 
   const handleCheckAnswer = (index: number) => {
@@ -1131,11 +1148,15 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                                 <h3 className="text-xl sm:text-2xl font-medium text-slate-900 mb-8 leading-relaxed flex items-start gap-3">
                                   {isListeningMode && (
                                     <button 
-                                      onClick={() => handleSpeak(q.question)}
-                                      className="mt-1 p-2 bg-[var(--theme-primary-50)] text-[var(--theme-primary-600)] rounded-full hover:bg-[var(--theme-primary-100)] transition-colors"
-                                      title="Listen to question"
+                                      onClick={() => speakingIndex === index ? handleStop() : handleSpeak(q.question, index)}
+                                      className={`mt-1 p-2 rounded-full transition-colors ${
+                                        speakingIndex === index 
+                                          ? 'bg-rose-100 text-rose-600 hover:bg-rose-200' 
+                                          : 'bg-[var(--theme-primary-50)] text-[var(--theme-primary-600)] hover:bg-[var(--theme-primary-100)]'
+                                      }`}
+                                      title={speakingIndex === index ? "Stop listening" : "Listen to question"}
                                     >
-                                      <Volume2 className="w-5 h-5" />
+                                      {speakingIndex === index ? <Square className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                                     </button>
                                   )}
                                   <span>{isListeningMode && !isSubmitted ? "Listen and answer..." : q.question}</span>
@@ -1205,11 +1226,15 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                                   <h3 className="text-xl sm:text-2xl font-medium text-slate-900 mb-8 leading-relaxed flex items-start gap-3">
                                     {isListeningMode && (
                                       <button 
-                                        onClick={() => handleSpeak(q.question)}
-                                        className="mt-1 p-2 bg-[var(--theme-primary-50)] text-[var(--theme-primary-600)] rounded-full hover:bg-[var(--theme-primary-100)] transition-colors"
-                                        title="Listen to question"
+                                        onClick={() => speakingIndex === index ? handleStop() : handleSpeak(q.question, index)}
+                                        className={`mt-1 p-2 rounded-full transition-colors ${
+                                          speakingIndex === index 
+                                            ? 'bg-rose-100 text-rose-600 hover:bg-rose-200' 
+                                            : 'bg-[var(--theme-primary-50)] text-[var(--theme-primary-600)] hover:bg-[var(--theme-primary-100)]'
+                                        }`}
+                                        title={speakingIndex === index ? "Stop listening" : "Listen to question"}
                                       >
-                                        <Volume2 className="w-5 h-5" />
+                                        {speakingIndex === index ? <Square className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                                       </button>
                                     )}
                                     <span>{isListeningMode && !isAnswered ? "Listen and answer..." : q.question}</span>
@@ -1546,7 +1571,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
           </div>
           <div className="flex items-center gap-3">
             <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] rounded font-mono font-bold border border-slate-200">
-              v1.0.010
+              v1.0.011
             </span>
             <div className="flex gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>

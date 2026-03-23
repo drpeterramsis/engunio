@@ -137,3 +137,9 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - **Default Selection**: Set "Present Simple" as the default grammar rule.
 - **Local Persistence**: User selections for grammar rules and question types are now stored locally and persist across sessions.
 - **Version Update**: Updated application version to 1.0.010.
+
+## Version 1.0.011 Updates
+- **Enhanced Listening Audio**: Improved the AI prompt to generate "small action" sentences for listening comprehension.
+- **Audio Playback Control**: Added a "Stop" button (toggles with Listen) to allow users to cancel speech playback.
+- **Clean Speech**: Implemented logic to strip underscores and dots from text before reading aloud, ensuring a more natural listening experience.
+- **Version Update**: Updated application version to 1.0.011.
