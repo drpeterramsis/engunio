@@ -73,6 +73,21 @@ const GRAMMAR_CATEGORIES = {
   ],
   'Advanced & Vocabulary': [
     'Collocations', 'Gerunds vs Infinitives', 'Idioms', 'Modal Verbs', 'Participle Clauses', 'Phrasal Verbs'
+  ],
+  'Academy Series Grammar': [
+    'Pronouns (Subject, Object, Possessive, Reflexive)',
+    'Yes/No Questions',
+    'Wh- Questions',
+    'How Questions (How many, How much, etc.)',
+    'Present Simple Tense',
+    'Past Simple Tense',
+    'Future Simple Tense',
+    'Present Continuous Tense',
+    'Past Continuous Tense',
+    'Irregular Verbs',
+    'If Conditionals (1st, 2nd, 3rd) & Unless',
+    'Prepositions of Time and Place (in, on, at)',
+    'Pronunciation Rules (Silent letters, C, H, etc.)'
   ]
 };
 
@@ -619,224 +634,273 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
           </div>
 
         </motion.div>
+          )}
 
-        {/* Right Column: Question Engine & History */}
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="lg:col-span-8 space-y-6"
-        >
-          
-          {/* Question Area */}
-          <AnimatePresence mode="wait">
-            {loading ? (
-              <motion.div 
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="bg-white p-12 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center min-h-[400px]"
-              >
-                <Loader2 className="w-12 h-12 text-[var(--theme-primary-600)] animate-spin mb-4" />
-                <p className="text-slate-500 font-medium animate-pulse">Crafting the perfect questions...</p>
-              </motion.div>
-            ) : generatedQuestions.length > 0 && currentQuestion ? (
-              <motion.div 
-                key="question"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200 min-h-[400px] flex flex-col"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-                  <div className="flex items-center gap-2">
-                    {feedback ? (
-                      <>
-                        <span className="px-3 py-1 bg-[var(--theme-primary-50)] text-[var(--theme-primary-700)] text-xs font-bold rounded-full uppercase tracking-wider border border-[var(--theme-primary-100)]">
-                          {currentQuestion.rule}
-                        </span>
-                        <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wider border border-slate-200">
-                          {currentQuestion.difficulty}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wider border border-slate-200">
-                        {config.types.length === 1 ? config.types[0] : 'Mixed Practice'}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-sm text-slate-500 font-medium flex items-center gap-1.5">
-                    Question {currentQuestionIndex + 1} of {generatedQuestions.length}
-                  </span>
-                </div>
+          {/* Practice Tab */}
+          {activeTab === 'practice' && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-6"
+            >
+              <AnimatePresence mode="wait">
+                {loading ? (
+                  <motion.div 
+                    key="loading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="bg-white p-12 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center min-h-[400px]"
+                  >
+                    <Loader2 className="w-12 h-12 text-[var(--theme-primary-600)] animate-spin mb-4" />
+                    <p className="text-slate-500 font-medium animate-pulse">Crafting the perfect questions...</p>
+                  </motion.div>
+                ) : generatedQuestions.length > 0 ? (
+                  <motion.div 
+                    key="questions"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-8"
+                  >
+                    {generatedQuestions.map((q, index) => {
+                      const feedback = feedbacks[index];
+                      const isMCQ = q.choices && q.choices.length > 0;
+                      const uAnswer = userAnswers[index] || '';
 
-                <h3 className="text-xl sm:text-2xl font-medium text-slate-900 mb-8 leading-relaxed">
-                  {currentQuestion.question}
-                </h3>
+                      return (
+                        <div key={index} className="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+                          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                            <div className="flex items-center gap-2">
+                              {isSubmitted ? (
+                                <>
+                                  <span className="px-3 py-1 bg-[var(--theme-primary-50)] text-[var(--theme-primary-700)] text-xs font-bold rounded-full uppercase tracking-wider border border-[var(--theme-primary-100)]">
+                                    {q.rule}
+                                  </span>
+                                  <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wider border border-slate-200">
+                                    {q.difficulty}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wider border border-slate-200">
+                                  {config.types.length === 1 ? config.types[0] : 'Mixed Practice'}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-sm text-slate-500 font-medium flex items-center gap-1.5">
+                              Question {index + 1} of {generatedQuestions.length}
+                            </span>
+                          </div>
 
-                <div className="flex-grow">
-                  {!feedback ? (
-                    <div className="space-y-6">
-                      {isMCQ ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                          {currentQuestion.choices.map((choice, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => setUserAnswer(choice)}
-                              className={`p-4 text-left rounded-xl border-2 transition-all ${
-                                userAnswer === choice 
-                                  ? 'border-[var(--theme-primary-600)] bg-[var(--theme-primary-50)] text-[var(--theme-primary-900)] shadow-sm' 
-                                  : 'border-slate-200 hover:border-[var(--theme-primary-300)] hover:bg-slate-50 text-slate-700'
-                              }`}
-                            >
-                              <span className="font-medium">{choice}</span>
-                            </button>
-                          ))}
+                          <h3 className="text-xl sm:text-2xl font-medium text-slate-900 mb-8 leading-relaxed">
+                            {q.question}
+                          </h3>
+
+                          <div className="flex-grow">
+                            <div className="space-y-6">
+                              {isMCQ ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                  {q.choices.map((choice, idx) => (
+                                    <button
+                                      key={idx}
+                                      onClick={() => !isSubmitted && setUserAnswers(prev => ({...prev, [index]: choice}))}
+                                      disabled={isSubmitted}
+                                      className={`p-4 text-left rounded-xl border-2 transition-all ${
+                                        uAnswer === choice 
+                                          ? 'border-[var(--theme-primary-600)] bg-[var(--theme-primary-50)] text-[var(--theme-primary-900)] shadow-sm' 
+                                          : 'border-slate-200 hover:border-[var(--theme-primary-300)] hover:bg-slate-50 text-slate-700'
+                                      } ${isSubmitted ? 'cursor-default' : ''}`}
+                                    >
+                                      <span className="font-medium">{choice}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : (
+                                <input
+                                  type="text"
+                                  value={uAnswer}
+                                  onChange={e => setUserAnswers(prev => ({...prev, [index]: e.target.value}))}
+                                  disabled={isSubmitted}
+                                  placeholder="Type your answer here..."
+                                  className="w-full p-4 text-lg rounded-xl border-2 border-slate-200 focus:border-[var(--theme-primary-600)] focus:ring-0 transition-colors bg-slate-50 focus:bg-white disabled:opacity-70"
+                                />
+                              )}
+                            </div>
+
+                            {isSubmitted && feedback && (
+                              <motion.div 
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                className={`mt-6 p-6 rounded-xl border ${
+                                  feedback.isCorrect 
+                                    ? 'bg-emerald-50 border-emerald-200' 
+                                    : 'bg-rose-50 border-rose-200'
+                                }`}
+                              >
+                                <div className="flex items-start gap-4">
+                                  {feedback.isCorrect ? (
+                                    <CheckCircle className="w-8 h-8 text-emerald-600 shrink-0 mt-1" />
+                                  ) : (
+                                    <XCircle className="w-8 h-8 text-rose-600 shrink-0 mt-1" />
+                                  )}
+                                  <div className="flex-grow">
+                                    <h4 className={`text-xl font-bold mb-2 ${
+                                      feedback.isCorrect ? 'text-emerald-800' : 'text-rose-800'
+                                    }`}>
+                                      {feedback.isCorrect ? 'Excellent!' : 'Not quite right'}
+                                    </h4>
+                                    
+                                    {!feedback.isCorrect && (
+                                      <div className="mb-4 p-3 bg-white rounded-lg border border-rose-100 shadow-sm">
+                                        <span className="text-xs font-bold text-rose-500 uppercase tracking-wider block mb-1">Correct Answer</span>
+                                        <p className="text-slate-900 font-medium">{q.answer}</p>
+                                      </div>
+                                    )}
+                                    
+                                    <div className="mb-2">
+                                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Explanation</span>
+                                      <p className="text-slate-700 leading-relaxed">
+                                        {feedback.explanation}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </div>
                         </div>
-                      ) : (
-                        <input
-                          type="text"
-                          value={userAnswer}
-                          onChange={e => setUserAnswer(e.target.value)}
-                          placeholder="Type your answer here..."
-                          className="w-full p-4 text-lg rounded-xl border-2 border-slate-200 focus:border-[var(--theme-primary-600)] focus:ring-0 transition-colors bg-slate-50 focus:bg-white"
-                          onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                        />
-                      )}
+                      );
+                    })}
 
-                      <div className="pt-4 flex justify-end">
+                    {!isSubmitted ? (
+                      <div className="flex justify-end pt-4">
                         <button
-                          onClick={handleSubmit}
-                          disabled={!userAnswer.trim()}
+                          onClick={handleSubmitAll}
+                          disabled={Object.keys(userAnswers).length < generatedQuestions.length}
                           className="bg-slate-900 text-white py-3 px-8 rounded-xl font-medium hover:bg-slate-800 disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2"
                         >
-                          Submit Answer
+                          Submit All Answers
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       </div>
-                    </div>
-                  ) : (
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className={`p-6 rounded-xl border ${
-                        feedback.isCorrect 
-                          ? 'bg-emerald-50 border-emerald-200' 
-                          : 'bg-rose-50 border-rose-200'
-                      }`}
-                    >
-                      <div className="flex items-start gap-4">
-                        {feedback.isCorrect ? (
-                          <CheckCircle className="w-8 h-8 text-emerald-600 shrink-0 mt-1" />
-                        ) : (
-                          <XCircle className="w-8 h-8 text-rose-600 shrink-0 mt-1" />
-                        )}
-                        <div className="flex-grow">
-                          <h4 className={`text-xl font-bold mb-2 ${
-                            feedback.isCorrect ? 'text-emerald-800' : 'text-rose-800'
-                          }`}>
-                            {feedback.isCorrect ? 'Excellent!' : 'Not quite right'}
-                          </h4>
-                          
-                          {!feedback.isCorrect && (
-                            <div className="mb-4 p-3 bg-white rounded-lg border border-rose-100 shadow-sm">
-                              <span className="text-xs font-bold text-rose-500 uppercase tracking-wider block mb-1">Correct Answer</span>
-                              <p className="text-slate-900 font-medium">{currentQuestion.answer}</p>
-                            </div>
+                    ) : (
+                      <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 text-center">
+                        <h3 className="text-xl font-bold text-slate-800 mb-2">Session Complete!</h3>
+                        <p className="text-lg text-slate-600 mb-6">
+                          You scored <strong className="text-[var(--theme-primary-600)]">{sessionScore}</strong> out of {generatedQuestions.length}
+                        </p>
+                        <div className="flex justify-center gap-4">
+                          {sessionScore / generatedQuestions.length >= 0.9 && (
+                            <button
+                              onClick={() => setShowCertificate(true)}
+                              className="bg-[var(--theme-primary-600)] text-white py-2.5 px-6 rounded-lg font-medium hover:bg-[var(--theme-primary-700)] transition-colors shadow-sm flex items-center gap-2"
+                            >
+                              <Award className="w-5 h-5" />
+                              View Certificate
+                            </button>
                           )}
-                          
-                          <div className="mb-6">
-                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Explanation</span>
-                            <p className="text-slate-700 leading-relaxed">
-                              {feedback.explanation}
-                            </p>
-                          </div>
-                          
                           <button
-                            onClick={handleNextQuestion}
-                            className="bg-white border border-slate-300 text-slate-700 py-2.5 px-6 rounded-lg font-medium hover:bg-slate-50 transition-colors shadow-sm flex items-center gap-2"
+                            onClick={() => setActiveTab('setup')}
+                            className="bg-slate-100 text-slate-700 py-2.5 px-6 rounded-lg font-medium hover:bg-slate-200 transition-colors shadow-sm"
                           >
-                            {currentQuestionIndex < generatedQuestions.length - 1 ? 'Next Question' : 'Finish Quiz'}
-                            <ArrowRight className="w-4 h-4" />
+                            Practice Again
                           </button>
                         </div>
                       </div>
-                    </motion.div>
-                  )}
-                </div>
-              </motion.div>
-            ) : (
-              <div className="bg-white p-12 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center min-h-[400px] text-center">
-                <div className="w-16 h-16 bg-[var(--theme-primary-50)] rounded-full flex items-center justify-center mb-4">
-                  <Rocket className="w-8 h-8 text-[var(--theme-primary-600)]" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-800 mb-2">Ready to practice?</h3>
-                <p className="text-slate-500 max-w-md mx-auto">
-                  Select your grammar rules, question types, and difficulty on the left, then click "Generate Questions" to start learning.
-                </p>
-              </div>
-            )}
-          </AnimatePresence>
-
-          {/* History Area */}
-          {history.length > 0 && (
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold flex items-center gap-2 text-slate-800">
-                  <History className="w-5 h-5 text-slate-500" />
-                  Recent History
-                </h2>
-                <span className="text-sm text-slate-500">{history.length} attempts</span>
-              </div>
-              
-              <div className="space-y-8">
-                {groupedHistory.slice(0, 5).map(([sessionId, attempts]) => (
-                  <div key={sessionId} className="space-y-4">
-                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">
-                      {formatSessionDate(sessionId)}
-                    </h3>
-                    <div className="space-y-4">
-                      {attempts.map((attempt, idx) => (
-                        <motion.div 
-                          key={attempt.id} 
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.3, delay: idx * 0.1 }}
-                          className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors"
-                        >
-                          <div className="flex items-start justify-between gap-4 mb-3">
-                            <p className="text-sm font-medium text-slate-900 leading-relaxed">{attempt.question}</p>
-                            {attempt.isCorrect ? (
-                              <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-                            ) : (
-                              <XCircle className="w-5 h-5 text-rose-500 shrink-0" />
-                            )}
-                          </div>
-                          
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-100">
-                            <div>
-                              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Your answer</span>
-                              <p className={`text-sm font-medium ${attempt.isCorrect ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                {attempt.userAnswer}
-                              </p>
-                            </div>
-                            {!attempt.isCorrect && (
-                              <div>
-                                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Correct answer</span>
-                                <p className="text-sm font-medium text-slate-900">{attempt.correctAnswer}</p>
-                              </div>
-                            )}
-                          </div>
-                        </motion.div>
-                      ))}
+                    )}
+                  </motion.div>
+                ) : (
+                  <div className="bg-white p-12 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center min-h-[400px] text-center">
+                    <div className="w-16 h-16 bg-[var(--theme-primary-50)] rounded-full flex items-center justify-center mb-4">
+                      <Rocket className="w-8 h-8 text-[var(--theme-primary-600)]" />
                     </div>
+                    <h3 className="text-xl font-bold text-slate-800 mb-2">Ready to practice?</h3>
+                    <p className="text-slate-500 max-w-md mx-auto">
+                      Select your grammar rules, question types, and difficulty in the Setup tab, then click "Generate Questions" to start learning.
+                    </p>
                   </div>
-                ))}
-              </div>
-            </div>
+                )}
+              </AnimatePresence>
+            </motion.div>
           )}
 
-        </motion.div>
+          {/* History Tab */}
+          {activeTab === 'history' && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-6"
+            >
+              {history.length > 0 ? (
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg font-semibold flex items-center gap-2 text-slate-800">
+                      <History className="w-5 h-5 text-slate-500" />
+                      Recent History
+                    </h2>
+                    <span className="text-sm text-slate-500">{history.length} attempts</span>
+                  </div>
+                  
+                  <div className="space-y-8">
+                    {groupedHistory.map(([sessionId, attempts]) => (
+                      <div key={sessionId} className="space-y-4">
+                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">
+                          {formatSessionDate(sessionId)}
+                        </h3>
+                        <div className="space-y-4">
+                          {attempts.map((attempt, idx) => (
+                            <motion.div 
+                              key={attempt.id} 
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.3, delay: idx * 0.1 }}
+                              className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors"
+                            >
+                              <div className="flex items-start justify-between gap-4 mb-3">
+                                <p className="text-sm font-medium text-slate-900 leading-relaxed">{attempt.question}</p>
+                                {attempt.isCorrect ? (
+                                  <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+                                ) : (
+                                  <XCircle className="w-5 h-5 text-rose-500 shrink-0" />
+                                )}
+                              </div>
+                              
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-100">
+                                <div>
+                                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Your answer</span>
+                                  <p className={`text-sm font-medium ${attempt.isCorrect ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                    {attempt.userAnswer}
+                                  </p>
+                                </div>
+                                {!attempt.isCorrect && (
+                                  <div>
+                                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Correct answer</span>
+                                    <p className="text-sm font-medium text-slate-900">{attempt.correctAnswer}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white p-12 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center min-h-[400px] text-center">
+                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                    <History className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800 mb-2">No history yet</h3>
+                  <p className="text-slate-500 max-w-md mx-auto">
+                    Your practice history will appear here once you complete some questions.
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </div>
       </main>
 
       {/* Footer */}
@@ -846,7 +910,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
             &copy; {new Date().getFullYear()} Created by Dr. Peter Ramsis [El-Pedro] - +201550452122. All rights reserved.
           </p>
           <p className="text-slate-400 text-xs font-mono font-medium">
-            v1.0.005
+            v1.0.006
           </p>
         </div>
       </footer>

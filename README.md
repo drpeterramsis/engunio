@@ -95,3 +95,11 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - Grouped the history section by date and exam session for better organization.
 - Added more animations and professional design elements to the web app using Framer Motion.
 - Updated version number to v1.0.005.
+
+## Version 1.0.006 Updates
+- Refactored the UI into three main tabs: Setup, Practice, and History.
+- Updated the Practice tab to display all generated questions on a single page with a single "Submit All Answers" button.
+- Implemented a congratulatory confetti animation and a shareable Certificate of Achievement for scores of 90% and above.
+- Added a new grammar category "Academy Series Grammar" based on the provided PDF rules (Pronouns, Wh- Questions, Tenses, Conditionals, etc.).
+- Fixed a build error caused by a syntax issue in the JSX structure.
+- Updated version number to v1.0.006.
