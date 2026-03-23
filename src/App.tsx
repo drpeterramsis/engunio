@@ -54,18 +54,32 @@ interface Question {
   difficulty: string;
 }
 
-const ALL_RULES = [
-  'Present Simple', 'Present Continuous', 'Present Perfect', 'Present Perfect Continuous',
-  'Past Simple', 'Past Continuous', 'Past Perfect', 'Past Perfect Continuous',
-  'Future Simple', 'Future Continuous', 'Future Perfect',
-  'Conditionals (Zero, 1st, 2nd, 3rd, Mixed)',
-  'Passive Voice', 'Reported Speech', 'Gerunds vs Infinitives',
-  'Modal Verbs', 'Articles (a, an, the)', 'Prepositions of Time/Place',
-  'Relative Clauses', 'Adjectives and Adverbs', 'Noun Clauses',
-  'Question Tags', 'Phrasal Verbs', 'Idioms'
-];
+// Categorized and sorted grammar rules
+const GRAMMAR_CATEGORIES = {
+  'Tenses': [
+    'Future Continuous', 'Future Perfect', 'Future Perfect Continuous', 'Future Simple',
+    'Past Continuous', 'Past Perfect', 'Past Perfect Continuous', 'Past Simple',
+    'Present Continuous', 'Present Perfect', 'Present Perfect Continuous', 'Present Simple'
+  ],
+  'Parts of Speech': [
+    'Adjectives', 'Adverbs', 'Articles (a, an, the)', 'Conjunctions', 'Interjections', 'Nouns', 'Prepositions', 'Pronouns'
+  ],
+  'Sentence Structure': [
+    'Conditionals (Mixed)', 'Conditionals (Type 0)', 'Conditionals (Type 1)', 'Conditionals (Type 2)', 'Conditionals (Type 3)',
+    'Direct and Indirect Objects', 'Noun Clauses', 'Passive Voice', 'Question Tags', 'Relative Clauses', 'Reported Speech', 'Subject-Verb Agreement'
+  ],
+  'Advanced & Vocabulary': [
+    'Collocations', 'Gerunds vs Infinitives', 'Idioms', 'Modal Verbs', 'Participle Clauses', 'Phrasal Verbs'
+  ]
+};
 
-const ALL_TYPES = ['MCQ', 'Fill in the blank', 'Error Correction', 'Rewrite'];
+// Flatten rules for "Select All" functionality
+const ALL_RULES = Object.values(GRAMMAR_CATEGORIES).flat().sort();
+
+// Expanded and sorted question types
+const ALL_TYPES = [
+  'Error Correction', 'Fill in the blank', 'Matching', 'MCQ', 'Rewrite', 'Sentence Ordering', 'Short Answer', 'True/False', 'Word Formation'
+].sort();
 
 const THEMES = [
   { id: 'indigo', name: 'Indigo', color: 'bg-indigo-500' },
@@ -336,22 +350,27 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                         {config.rules.length === ALL_RULES.length ? 'Deselect All' : 'Select All'}
                       </button>
                     </div>
-                    <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
-                      {ALL_RULES.map(rule => (
-                        <label key={rule} className="flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            checked={config.rules.includes(rule)}
-                            onChange={(e) => {
-                              const newRules = e.target.checked 
-                                ? [...config.rules, rule] 
-                                : config.rules.filter(r => r !== rule);
-                              setConfig({...config, rules: newRules});
-                            }}
-                            className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
-                          />
-                          <span className="text-sm text-slate-700">{rule}</span>
-                        </label>
+                    <div className="max-h-64 overflow-y-auto space-y-4 pr-1">
+                      {Object.entries(GRAMMAR_CATEGORIES).map(([category, rules]) => (
+                        <div key={category} className="space-y-1">
+                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider px-1 mb-2">{category}</h4>
+                          {rules.map(rule => (
+                            <label key={rule} className="flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                checked={config.rules.includes(rule)}
+                                onChange={(e) => {
+                                  const newRules = e.target.checked 
+                                    ? [...config.rules, rule] 
+                                    : config.rules.filter(r => r !== rule);
+                                  setConfig({...config, rules: newRules});
+                                }}
+                                className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
+                              />
+                              <span className="text-sm text-slate-700">{rule}</span>
+                            </label>
+                          ))}
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -652,7 +671,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
             &copy; {new Date().getFullYear()} Created by Dr. Peter Ramsis [El-Pedro] - +201550452122. All rights reserved.
           </p>
           <p className="text-slate-400 text-xs font-mono font-medium">
-            v1.0.002
+            v1.0.003
           </p>
         </div>
       </footer>

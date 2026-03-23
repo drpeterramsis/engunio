@@ -75,3 +75,10 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - Collapsed Grammar Rules and Question Types by default with summary counts.
 - Removed the lesson content upload option to streamline the interface.
 - Updated version number in footer to v1.0.002.
+
+## Version 1.0.003 Updates
+- Categorized grammar rules into Tenses, Parts of Speech, Sentence Structure, and Advanced & Vocabulary.
+- Sorted all grammar rules and question types alphabetically.
+- Added missing comprehensive grammar rules and question types (Matching, True/False, Sentence Ordering, etc.).
+- Fixed theme colors not applying to buttons and UI elements by defining CSS variables for all themes in index.css.
+- Updated version number to v1.0.003.
