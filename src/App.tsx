@@ -447,7 +447,7 @@ export default function App() {
     }
 
     if (!apiKey) {
-      setErrorMsg('API Key is missing. Please set VITE_GEMINI_API_KEY in your environment variables.');
+      setErrorMsg('API Key is missing. Please set OPENROUTER_API_KEY in your environment variables.');
       return;
     }
 
@@ -467,8 +467,6 @@ export default function App() {
 
     try {
       setGenerationProgress(10);
-      const ai = new GoogleGenAI({ apiKey });
-      setGenerationProgress(30);
       
       let contextInfo = "";
       if (config.useAcademyLibrary) {
@@ -500,18 +498,30 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
 `;
 
       setGenerationProgress(50);
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: batchSchema,
-          temperature: 0.7,
-        }
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "HTTP-Referer": window.location.origin,
+          "X-Title": "ENGUNIO",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.0-flash-001", // Or another model
+          messages: [{ role: "user", content: prompt }],
+          response_format: { type: "json_object" }
+        })
       });
 
+      if (!response.ok) {
+        throw new Error(`OpenRouter API error: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      const content = result.choices[0].message.content;
+      
       setGenerationProgress(80);
-      const data = JSON.parse(response.text);
+      const data = JSON.parse(content);
       if (!data.questions || data.questions.length === 0) {
         throw new Error("No questions were returned by the AI.");
       }
@@ -544,7 +554,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
     }
 
     if (!apiKey) {
-      setErrorMsg('API Key is missing for the lesson.');
+      setErrorMsg('API Key is missing. Please set OPENROUTER_API_KEY in your environment variables.');
       return;
     }
 
@@ -553,7 +563,6 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
     setFastLessonContent(null);
 
     try {
-      const ai = new GoogleGenAI({ apiKey });
       const prompt = `
         Provide a fast, professional English grammar lesson about: ${config.rules.join(', ')}.
         Include:
@@ -563,12 +572,26 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
         Format the output in clean Markdown.
       `;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "HTTP-Referer": window.location.origin,
+          "X-Title": "ENGUNIO",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.0-flash-001",
+          messages: [{ role: "user", content: prompt }]
+        })
       });
 
-      setFastLessonContent(response.text);
+      if (!response.ok) {
+        throw new Error(`OpenRouter API error: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      setFastLessonContent(result.choices[0].message.content);
     } catch (err) {
       console.error(err);
       setFastLessonContent("Failed to generate lesson. Please try again.");
@@ -2117,7 +2140,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
           </div>
           <div className="flex items-center gap-3">
             <span className={`px-2 py-0.5 ${isDarkMode ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-500 border-slate-200'} text-[10px] rounded font-mono font-bold border`}>
-              v1.0.019
+              v1.0.020
             </span>
             <div className="flex gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -2200,15 +2223,15 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                    <div className="max-w-4xl mx-auto">
                     <div className="flex items-center justify-between border-b-2 border-slate-800 pb-4 mb-8">
                       <div>
-                        <h1 className="text-2xl font-bold text-slate-900">ENGUNIO - English Grammar Master</h1>
+                        <h1 className="font-bold text-slate-900">ENGUNIO - English Grammar Master</h1>
                         <p className="text-slate-600 font-medium">Report: {printData.title}</p>
                         {printData.data.duration && (
-                          <p className="text-slate-500 text-sm">Duration: {Math.floor(printData.data.duration / 60000)}m {Math.floor((printData.data.duration % 60000) / 1000)}s</p>
+                          <p className="text-slate-500">Duration: {Math.floor(printData.data.duration / 60000)}m {Math.floor((printData.data.duration % 60000) / 1000)}s</p>
                         )}
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold text-slate-800">Student: {userName || 'Guest'}</p>
-                        <p className="text-xs text-slate-500">Date: {new Date().toLocaleDateString()}</p>
+                        <p className="font-bold text-slate-800">Student: {userName || 'Guest'}</p>
+                        <p className="text-slate-500">Date: {new Date().toLocaleDateString()}</p>
                       </div>
                     </div>
 
@@ -2227,7 +2250,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                           return (
                             <div key={sessionId} className="border border-slate-200 rounded-lg p-6 break-inside-avoid">
                               <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
-                                <h3 className="font-bold text-lg">Session: {new Date(firstAttempt.timestamp).toLocaleString()}</h3>
+                                <h3 className="font-bold">Session: {new Date(firstAttempt.timestamp).toLocaleString()}</h3>
                                 <span className="font-bold text-[var(--theme-primary-700)]">Score: {correct}/{total} ({Math.round((correct/total)*100)}%)</span>
                               </div>
                               <div className="space-y-4">
@@ -2310,7 +2333,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                                     </div>
                                   )}
                                   {printData.type === 'answer-key' && (
-                                    <div className="mt-2 p-3 bg-slate-50 rounded border border-slate-200 text-sm">
+                                    <div className="mt-2 p-3 bg-slate-50 rounded border border-slate-200">
                                       <p className="font-bold text-emerald-700">Correct Answer: {q.answer}</p>
                                       <p className="text-slate-600 italic">Explanation: {q.explanation}</p>
                                     </div>
