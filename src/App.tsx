@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import React, { useState, useEffect, useMemo } from 'react';
 import { GoogleGenAI, Type } from '@google/genai';
 import { User, CheckCircle, XCircle, History, Trophy, Loader2, Play, ArrowRight, Settings, Rocket, Trash2, ChevronDown, ChevronUp, Search } from 'lucide-react';
@@ -34,6 +35,7 @@ const batchSchema = {
 
 interface Attempt {
   id: string;
+  sessionId: string;
   question: string;
   type: string;
   rule: string;
@@ -107,7 +109,7 @@ export default function App() {
   const [rulesSearch, setRulesSearch] = useState('');
   const [typesSearch, setTypesSearch] = useState('');
 
-  const filteredCategories = useMemo(() => {
+  const filteredCategories: Record<string, string[]> = useMemo(() => {
     const search = rulesSearch.toLowerCase();
     if (!search) return GRAMMAR_CATEGORIES;
     
@@ -127,8 +129,34 @@ export default function App() {
     return ALL_TYPES.filter(type => type.toLowerCase().includes(search));
   }, [typesSearch]);
 
+  const groupedHistory = useMemo(() => {
+    const groups: Record<string, Attempt[]> = {};
+    history.forEach(attempt => {
+      const sessionId = attempt.sessionId || 'Previous Sessions';
+      if (!groups[sessionId]) {
+        groups[sessionId] = [];
+      }
+      groups[sessionId].push(attempt);
+    });
+    return Object.entries(groups).sort((a, b) => {
+      const timeA = parseInt(a[0]) || 0;
+      const timeB = parseInt(b[0]) || 0;
+      return timeB - timeA;
+    });
+  }, [history]);
+
+  const formatSessionDate = (sessionId: string) => {
+    const timestamp = parseInt(sessionId);
+    if (isNaN(timestamp)) return 'Previous Sessions';
+    return new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(new Date(timestamp));
+  };
+
   const [generatedQuestions, setGeneratedQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentSessionId, setCurrentSessionId] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [userAnswer, setUserAnswer] = useState('');
   const [feedback, setFeedback] = useState<{ isCorrect: boolean; explanation: string } | null>(null);
@@ -190,6 +218,7 @@ export default function App() {
     setLoading(true);
     setGeneratedQuestions([]);
     setCurrentQuestionIndex(0);
+    setCurrentSessionId(Date.now().toString());
     setFeedback(null);
     setUserAnswer('');
 
@@ -263,6 +292,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
 
     const attempt: Attempt = {
       id: Date.now().toString(),
+      sessionId: currentSessionId || Date.now().toString(),
       question: currentQuestion.question,
       type: config.types.length === 1 ? config.types[0] : 'Mixed',
       rule: currentQuestion.rule,
@@ -305,7 +335,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Rocket className="w-6 h-6 text-primary-600" />
+            <Rocket className="w-6 h-6 text-[var(--theme-primary-600)]" />
             <div className="hidden sm:block">
               <h1 className="text-xl font-bold text-slate-800 tracking-tight leading-none">ENGUNIO</h1>
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">ENGlish Upgrade Now</p>
@@ -338,7 +368,12 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
         
         {/* Left Column: Configuration */}
-        <div className="lg:col-span-4 space-y-6">
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+          className="lg:col-span-4 space-y-6"
+        >
           
           {/* Configuration Card */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
@@ -372,13 +407,13 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                           placeholder="Search grammar rules..." 
                           value={rulesSearch}
                           onChange={(e) => setRulesSearch(e.target.value)}
-                          className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                          className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--theme-primary-500)] focus:border-[var(--theme-primary-500)]"
                         />
                       </div>
                       <div className="flex justify-end">
                         <button 
                           onClick={() => setConfig({...config, rules: config.rules.length === ALL_RULES.length ? [] : ALL_RULES})}
-                          className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                          className="text-xs text-[var(--theme-primary-600)] hover:text-[var(--theme-primary-700)] font-medium"
                         >
                           {config.rules.length === ALL_RULES.length ? 'Deselect All' : 'Select All'}
                         </button>
@@ -402,7 +437,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                                       : config.rules.filter(r => r !== rule);
                                     setConfig({...config, rules: newRules});
                                   }}
-                                  className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
+                                  className="rounded border-slate-300 text-[var(--theme-primary-600)] focus:ring-[var(--theme-primary-500)] w-4 h-4"
                                 />
                                 <span className="text-sm text-slate-700">{rule}</span>
                               </label>
@@ -442,13 +477,13 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                           placeholder="Search question types..." 
                           value={typesSearch}
                           onChange={(e) => setTypesSearch(e.target.value)}
-                          className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                          className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--theme-primary-500)] focus:border-[var(--theme-primary-500)]"
                         />
                       </div>
                       <div className="flex justify-end">
                         <button 
                           onClick={() => setConfig({...config, types: config.types.length === ALL_TYPES.length ? [] : ALL_TYPES})}
-                          className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                          className="text-xs text-[var(--theme-primary-600)] hover:text-[var(--theme-primary-700)] font-medium"
                         >
                           {config.types.length === ALL_TYPES.length ? 'Deselect All' : 'Select All'}
                         </button>
@@ -469,7 +504,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                                   : config.types.filter(t => t !== type);
                                 setConfig({...config, types: newTypes});
                               }}
-                              className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
+                              className="rounded border-slate-300 text-[var(--theme-primary-600)] focus:ring-[var(--theme-primary-500)] w-4 h-4"
                             />
                             <span className="text-sm text-slate-700">{type}</span>
                           </label>
@@ -487,7 +522,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                   <select 
                     value={config.difficulty} 
                     onChange={e => setConfig({...config, difficulty: e.target.value})}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white text-sm"
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 shadow-sm focus:border-[var(--theme-primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-primary-500)] bg-white text-sm"
                   >
                     <option>Easy</option>
                     <option>Medium</option>
@@ -502,7 +537,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                     max="10" 
                     value={config.count}
                     onChange={e => setConfig({...config, count: Math.max(1, Math.min(10, parseInt(e.target.value) || 1))})}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white text-sm"
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 shadow-sm focus:border-[var(--theme-primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-primary-500)] bg-white text-sm"
                   />
                 </div>
               </div>
@@ -517,7 +552,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
               <button 
                 onClick={handleGenerate}
                 disabled={loading}
-                className="w-full mt-6 bg-primary-600 text-white py-2.5 px-4 rounded-lg font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-70 flex items-center justify-center gap-2 transition-colors shadow-sm"
+                className="w-full mt-6 bg-[var(--theme-primary-600)] text-white py-2.5 px-4 rounded-lg font-medium hover:bg-[var(--theme-primary-700)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary-500)] focus:ring-offset-2 disabled:opacity-70 flex items-center justify-center gap-2 transition-colors shadow-sm"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5" />}
                 {loading ? 'Generating...' : 'Generate Questions'}
@@ -525,10 +560,15 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
             </div>
           </div>
 
-        </div>
+        </motion.div>
 
         {/* Right Column: Question Engine & History */}
-        <div className="lg:col-span-8 space-y-6">
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="lg:col-span-8 space-y-6"
+        >
           
           {/* Question Area */}
           <AnimatePresence mode="wait">
@@ -540,7 +580,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                 exit={{ opacity: 0 }}
                 className="bg-white p-12 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center min-h-[400px]"
               >
-                <Loader2 className="w-12 h-12 text-primary-600 animate-spin mb-4" />
+                <Loader2 className="w-12 h-12 text-[var(--theme-primary-600)] animate-spin mb-4" />
                 <p className="text-slate-500 font-medium animate-pulse">Crafting the perfect questions...</p>
               </motion.div>
             ) : generatedQuestions.length > 0 && currentQuestion ? (
@@ -552,12 +592,20 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
               >
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                   <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 bg-primary-50 text-primary-700 text-xs font-bold rounded-full uppercase tracking-wider border border-primary-100">
-                      {currentQuestion.rule}
-                    </span>
-                    <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wider border border-slate-200">
-                      {currentQuestion.difficulty}
-                    </span>
+                    {feedback ? (
+                      <>
+                        <span className="px-3 py-1 bg-[var(--theme-primary-50)] text-[var(--theme-primary-700)] text-xs font-bold rounded-full uppercase tracking-wider border border-[var(--theme-primary-100)]">
+                          {currentQuestion.rule}
+                        </span>
+                        <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wider border border-slate-200">
+                          {currentQuestion.difficulty}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wider border border-slate-200">
+                        {config.types.length === 1 ? config.types[0] : 'Mixed Practice'}
+                      </span>
+                    )}
                   </div>
                   <span className="text-sm text-slate-500 font-medium flex items-center gap-1.5">
                     Question {currentQuestionIndex + 1} of {generatedQuestions.length}
@@ -579,8 +627,8 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                               onClick={() => setUserAnswer(choice)}
                               className={`p-4 text-left rounded-xl border-2 transition-all ${
                                 userAnswer === choice 
-                                  ? 'border-primary-600 bg-primary-50 text-primary-900 shadow-sm' 
-                                  : 'border-slate-200 hover:border-primary-300 hover:bg-slate-50 text-slate-700'
+                                  ? 'border-[var(--theme-primary-600)] bg-[var(--theme-primary-50)] text-[var(--theme-primary-900)] shadow-sm' 
+                                  : 'border-slate-200 hover:border-[var(--theme-primary-300)] hover:bg-slate-50 text-slate-700'
                               }`}
                             >
                               <span className="font-medium">{choice}</span>
@@ -593,7 +641,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                           value={userAnswer}
                           onChange={e => setUserAnswer(e.target.value)}
                           placeholder="Type your answer here..."
-                          className="w-full p-4 text-lg rounded-xl border-2 border-slate-200 focus:border-primary-600 focus:ring-0 transition-colors bg-slate-50 focus:bg-white"
+                          className="w-full p-4 text-lg rounded-xl border-2 border-slate-200 focus:border-[var(--theme-primary-600)] focus:ring-0 transition-colors bg-slate-50 focus:bg-white"
                           onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                         />
                       )}
@@ -661,8 +709,8 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
               </motion.div>
             ) : (
               <div className="bg-white p-12 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center min-h-[400px] text-center">
-                <div className="w-16 h-16 bg-primary-50 rounded-full flex items-center justify-center mb-4">
-                  <Rocket className="w-8 h-8 text-primary-600" />
+                <div className="w-16 h-16 bg-[var(--theme-primary-50)] rounded-full flex items-center justify-center mb-4">
+                  <Rocket className="w-8 h-8 text-[var(--theme-primary-600)]" />
                 </div>
                 <h3 className="text-xl font-bold text-slate-800 mb-2">Ready to practice?</h3>
                 <p className="text-slate-500 max-w-md mx-auto">
@@ -683,31 +731,46 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                 <span className="text-sm text-slate-500">{history.length} attempts</span>
               </div>
               
-              <div className="space-y-4">
-                {history.slice(0, 5).map(attempt => (
-                  <div key={attempt.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors">
-                    <div className="flex items-start justify-between gap-4 mb-3">
-                      <p className="text-sm font-medium text-slate-900 leading-relaxed">{attempt.question}</p>
-                      {attempt.isCorrect ? (
-                        <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-                      ) : (
-                        <XCircle className="w-5 h-5 text-rose-500 shrink-0" />
-                      )}
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-100">
-                      <div>
-                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Your answer</span>
-                        <p className={`text-sm font-medium ${attempt.isCorrect ? 'text-emerald-700' : 'text-rose-700'}`}>
-                          {attempt.userAnswer}
-                        </p>
-                      </div>
-                      {!attempt.isCorrect && (
-                        <div>
-                          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Correct answer</span>
-                          <p className="text-sm font-medium text-slate-900">{attempt.correctAnswer}</p>
-                        </div>
-                      )}
+              <div className="space-y-8">
+                {groupedHistory.slice(0, 5).map(([sessionId, attempts]) => (
+                  <div key={sessionId} className="space-y-4">
+                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">
+                      {formatSessionDate(sessionId)}
+                    </h3>
+                    <div className="space-y-4">
+                      {attempts.map((attempt, idx) => (
+                        <motion.div 
+                          key={attempt.id} 
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: idx * 0.1 }}
+                          className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-4 mb-3">
+                            <p className="text-sm font-medium text-slate-900 leading-relaxed">{attempt.question}</p>
+                            {attempt.isCorrect ? (
+                              <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+                            ) : (
+                              <XCircle className="w-5 h-5 text-rose-500 shrink-0" />
+                            )}
+                          </div>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-100">
+                            <div>
+                              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Your answer</span>
+                              <p className={`text-sm font-medium ${attempt.isCorrect ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                {attempt.userAnswer}
+                              </p>
+                            </div>
+                            {!attempt.isCorrect && (
+                              <div>
+                                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Correct answer</span>
+                                <p className="text-sm font-medium text-slate-900">{attempt.correctAnswer}</p>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      ))}
                     </div>
                   </div>
                 ))}
@@ -715,7 +778,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
             </div>
           )}
 
-        </div>
+        </motion.div>
       </main>
 
       {/* Footer */}
@@ -725,21 +788,35 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
             &copy; {new Date().getFullYear()} Created by Dr. Peter Ramsis [El-Pedro] - +201550452122. All rights reserved.
           </p>
           <p className="text-slate-400 text-xs font-mono font-medium">
-            v1.0.004
+            v1.0.005
           </p>
         </div>
       </footer>
 
       {/* Settings Modal */}
-      {showSettings && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-slate-800">Settings</h2>
-              <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-600">
-                <XCircle className="w-6 h-6" />
-              </button>
-            </div>
+      <AnimatePresence>
+        {showSettings && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border border-slate-100"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                  <Settings className="w-5 h-5 text-[var(--theme-primary-600)]" />
+                  Settings
+                </h2>
+                <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-full transition-colors">
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
             
             <div className="space-y-6">
               {/* Theme Selection */}
@@ -789,9 +866,10 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                 )}
               </div>
             </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

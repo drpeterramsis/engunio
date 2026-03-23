@@ -88,3 +88,10 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - Added a search/filter bar to the Grammar Rules and Question Types sections to easily find specific rules and types.
 - Fixed the theme color selection for buttons and UI elements by updating Tailwind v4 CSS variables mapping.
 - Updated version number to v1.0.004.
+
+## Version 1.0.005 Updates
+- Fixed the "Generate Questions" button color to properly apply the selected theme.
+- Hid the grammar rule and difficulty level on the question card until after the user submits their answer.
+- Grouped the history section by date and exam session for better organization.
+- Added more animations and professional design elements to the web app using Framer Motion.
+- Updated version number to v1.0.005.
