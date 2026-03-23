@@ -498,6 +498,9 @@ INSTRUCTIONS:
 Previous mistakes to focus on (if any):
 ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mistake: ${h.userAnswer}`).join('\n')}
 
+8. Previous questions/sentences/verbs used (DO NOT REPEAT):
+${history.map(h => `- Question: ${h.question}, Answer: ${h.answer}`).slice(-10).join('\n')}
+
 IMPORTANT: You must return ONLY valid JSON. Do not include any conversational text, markdown formatting, or explanations. The output must be a single JSON object with a 'questions' array.
 `;
 
@@ -1294,7 +1297,6 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 shadow-sm focus:border-[var(--theme-primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-primary-500)] bg-white text-sm"
                   >
                     <option value="deepseek/deepseek-r1">DeepSeek R1</option>
-                    <option value="openai/gpt-oss-120b:free">GPT-OSS 120B Free</option>
                     <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash</option>
                   </select>
                 </div>
@@ -2041,7 +2043,7 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
                                     <div className="flex flex-col gap-1">
                                       <div className="flex items-center gap-2">
                                         <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] rounded uppercase font-bold border border-slate-200">
-                                          {attempt.type}
+                                          {attempt.type === 'Mixed Practice' ? 'Practice' : attempt.type}
                                         </span>
                                         <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] rounded uppercase font-bold border border-slate-200">
                                           {attempt.rule}
@@ -2171,7 +2173,7 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
           </div>
           <div className="flex items-center gap-3">
             <span className={`px-2 py-0.5 ${isDarkMode ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-500 border-slate-200'} text-[10px] rounded font-mono font-bold border`}>
-              v1.0.027
+              v1.0.028
             </span>
             <div className="flex gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>

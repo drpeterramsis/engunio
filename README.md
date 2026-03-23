@@ -192,6 +192,12 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - **Enhanced Print Styling**: Applied global print-specific CSS to ensure clean, professional-looking reports and exams with proper margins and color adjustments.
 - **Version Update**: Updated application version to 1.0.018 across all configuration files and the UI footer.
 
+## Version 1.0.028 Updates
+- **AI Model Cleanup**: Removed the non-functional "GPT-OSS 120B Free" model from the AI model selection dropdown.
+- **Repetition Prevention**: Updated the AI generation prompt to include a history of recent questions, sentences, and verbs to prevent repetition.
+- **History Tagging Fix**: Updated history display to show the specific question type instead of the generic "Mixed Practice" label.
+- **Version Update**: Updated application version to 1.0.028 across all configuration files and the UI footer.
+
 ## Version 1.0.027 Updates
 - **Rewrite Instructions**: Enhanced AI prompt to explicitly include rewrite instructions within the question text for better clarity.
 - **AI Model Selection**: Added a dropdown menu in the Setup tab allowing users to select their preferred AI model from a list of free options.
