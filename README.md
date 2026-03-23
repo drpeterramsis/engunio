@@ -68,3 +68,10 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - Preserved history and scoring board functionality for batch questions.
 - Added a Settings menu to change the webapp's theme color dynamically.
 - Updated the app icon to a Rocket to better match the "Upgrade Now" slogan.
+
+## Version 1.0.002 Updates
+- Fixed theme color changing functionality by applying themes to the document body.
+- Fixed "Failed to generate questions" error by improving API key loading and adding detailed error messages.
+- Collapsed Grammar Rules and Question Types by default with summary counts.
+- Removed the lesson content upload option to streamline the interface.
+- Updated version number in footer to v1.0.002.

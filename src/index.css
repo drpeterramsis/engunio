@@ -14,7 +14,7 @@
   --color-primary-950: var(--primary-950);
 }
 
-:root {
+:root, .theme-indigo {
   /* Default Indigo */
   --primary-50: #eef2ff;
   --primary-100: #e0e7ff;

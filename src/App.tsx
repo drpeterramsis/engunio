@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GoogleGenAI, Type } from '@google/genai';
-import { Upload, User, CheckCircle, XCircle, History, Trophy, Loader2, Play, FileJson, ArrowRight, Settings, Rocket, Trash2 } from 'lucide-react';
+import { User, CheckCircle, XCircle, History, Trophy, Loader2, Play, ArrowRight, Settings, Rocket, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-
-// Initialize Gemini API (safely handles both AI Studio and Vercel environments)
-const apiKey = typeof process !== 'undefined' && process.env ? process.env.GEMINI_API_KEY : import.meta.env.VITE_GEMINI_API_KEY;
-const ai = new GoogleGenAI({ apiKey: apiKey || '' });
 
 const questionSchema = {
   type: Type.OBJECT,
@@ -83,8 +79,6 @@ export default function App() {
   const [userName, setUserName] = useState<string>('');
   const [score, setScore] = useState({ total: 0, correct: 0 });
   const [history, setHistory] = useState<Attempt[]>([]);
-  const [lessonContent, setLessonContent] = useState<string>('');
-  const [uploadMsg, setUploadMsg] = useState({ type: '', text: '' });
   const [errorMsg, setErrorMsg] = useState('');
   
   const [config, setConfig] = useState({
@@ -93,6 +87,9 @@ export default function App() {
     difficulty: 'Medium',
     count: 1
   });
+
+  const [isRulesExpanded, setIsRulesExpanded] = useState(false);
+  const [isTypesExpanded, setIsTypesExpanded] = useState(false);
 
   const [generatedQuestions, setGeneratedQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -114,9 +111,6 @@ export default function App() {
     const savedHistory = localStorage.getItem('history');
     if (savedHistory) setHistory(JSON.parse(savedHistory));
 
-    const savedLesson = localStorage.getItem('lessonContent');
-    if (savedLesson) setLessonContent(savedLesson);
-
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) setTheme(savedTheme);
   }, []);
@@ -124,28 +118,12 @@ export default function App() {
   useEffect(() => { localStorage.setItem('userName', userName); }, [userName]);
   useEffect(() => { localStorage.setItem('score', JSON.stringify(score)); }, [score]);
   useEffect(() => { localStorage.setItem('history', JSON.stringify(history)); }, [history]);
-  useEffect(() => { localStorage.setItem('lessonContent', lessonContent); }, [lessonContent]);
   useEffect(() => { localStorage.setItem('theme', theme); }, [theme]);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const content = event.target?.result as string;
-        JSON.parse(content);
-        setLessonContent(content);
-        setUploadMsg({ type: 'success', text: 'Lesson content loaded successfully!' });
-        setTimeout(() => setUploadMsg({ type: '', text: '' }), 3000);
-      } catch (err) {
-        setUploadMsg({ type: 'error', text: 'Invalid JSON file. Please upload a valid JSON file.' });
-        setTimeout(() => setUploadMsg({ type: '', text: '' }), 3000);
-      }
-    };
-    reader.readAsText(file);
-  };
+  // Apply theme class to body to ensure it cascades properly
+  useEffect(() => {
+    document.body.className = `theme-${theme} bg-slate-50 text-slate-900 font-sans`;
+  }, [theme]);
 
   const handleGenerate = async () => {
     if (config.rules.length === 0) {
@@ -156,6 +134,22 @@ export default function App() {
       setErrorMsg('Please select at least one question type.');
       return;
     }
+    
+    let apiKey = '';
+    try {
+      apiKey = typeof process !== 'undefined' && process.env ? process.env.GEMINI_API_KEY || '' : '';
+    } catch (e) {}
+    if (!apiKey) {
+      try {
+        apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+      } catch (e) {}
+    }
+
+    if (!apiKey) {
+      setErrorMsg('API Key is missing. Please set VITE_GEMINI_API_KEY in your environment variables.');
+      return;
+    }
+
     setErrorMsg('');
     setLoading(true);
     setGeneratedQuestions([]);
@@ -164,13 +158,13 @@ export default function App() {
     setUserAnswer('');
 
     try {
+      const ai = new GoogleGenAI({ apiKey });
       const prompt = `
 You are an expert English teacher and assessment creator.
 Generate EXACTLY ${config.count} English learning question(s) based on the following parameters:
 - Rules to cover: ${config.rules.join(', ')} (distribute questions among these rules)
 - Question Types: ${config.types.join(', ')} (distribute questions among these types)
 - Difficulty: ${config.difficulty}
-- Lesson Content: ${lessonContent || "None provided. Use general English knowledge."}
 
 INSTRUCTIONS:
 1. Generate EXACTLY ${config.count} question(s).
@@ -196,10 +190,13 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
       });
 
       const data = JSON.parse(response.text);
-      setGeneratedQuestions(data.questions || []);
-    } catch (error) {
+      if (!data.questions || data.questions.length === 0) {
+        throw new Error("No questions were returned by the AI.");
+      }
+      setGeneratedQuestions(data.questions);
+    } catch (error: any) {
       console.error("Error generating question:", error);
-      setErrorMsg("Failed to generate questions. Please try again.");
+      setErrorMsg(`Failed to generate questions: ${error.message || 'Please try again.'}`);
     } finally {
       setLoading(false);
     }
@@ -267,7 +264,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
   };
 
   return (
-    <div className={`theme-${theme} min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col`}>
+    <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -304,7 +301,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
 
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
         
-        {/* Left Column: Configuration & Upload */}
+        {/* Left Column: Configuration */}
         <div className="lg:col-span-4 space-y-6">
           
           {/* Configuration Card */}
@@ -312,76 +309,112 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
             <h2 className="text-lg font-semibold mb-4 text-slate-800">Setup Practice</h2>
             
             <div className="space-y-4">
-              {/* Rules Selection */}
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="block text-sm font-medium text-slate-700">Grammar Rules</label>
-                  <button 
-                    onClick={() => setConfig({...config, rules: config.rules.length === ALL_RULES.length ? [] : ALL_RULES})}
-                    className="text-xs text-primary-600 hover:text-primary-700 font-medium"
-                  >
-                    {config.rules.length === ALL_RULES.length ? 'Deselect All' : 'Select All'}
-                  </button>
-                </div>
-                <div className="max-h-40 overflow-y-auto border border-slate-300 rounded-lg p-2 space-y-1 bg-white">
-                  {ALL_RULES.map(rule => (
-                    <label key={rule} className="flex items-center gap-2 p-1 hover:bg-slate-50 rounded cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={config.rules.includes(rule)}
-                        onChange={(e) => {
-                          const newRules = e.target.checked 
-                            ? [...config.rules, rule] 
-                            : config.rules.filter(r => r !== rule);
-                          setConfig({...config, rules: newRules});
-                        }}
-                        className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
-                      />
-                      <span className="text-sm text-slate-700">{rule}</span>
-                    </label>
-                  ))}
-                </div>
+              {/* Rules Selection (Collapsible) */}
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <button 
+                  onClick={() => setIsRulesExpanded(!isRulesExpanded)}
+                  className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 transition-colors"
+                >
+                  <div className="text-left">
+                    <span className="block text-sm font-medium text-slate-800">Grammar Rules</span>
+                    {!isRulesExpanded && (
+                      <span className="text-xs text-slate-500 mt-0.5 block">
+                        {config.rules.length} selected {config.rules.length > 0 ? `(${config.rules.slice(0, 2).join(', ')}${config.rules.length > 2 ? '...' : ''})` : ''}
+                      </span>
+                    )}
+                  </div>
+                  {isRulesExpanded ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+                </button>
+                
+                {isRulesExpanded && (
+                  <div className="p-3 bg-white border-t border-slate-200">
+                    <div className="flex justify-end mb-2">
+                      <button 
+                        onClick={() => setConfig({...config, rules: config.rules.length === ALL_RULES.length ? [] : ALL_RULES})}
+                        className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                      >
+                        {config.rules.length === ALL_RULES.length ? 'Deselect All' : 'Select All'}
+                      </button>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
+                      {ALL_RULES.map(rule => (
+                        <label key={rule} className="flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={config.rules.includes(rule)}
+                            onChange={(e) => {
+                              const newRules = e.target.checked 
+                                ? [...config.rules, rule] 
+                                : config.rules.filter(r => r !== rule);
+                              setConfig({...config, rules: newRules});
+                            }}
+                            className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
+                          />
+                          <span className="text-sm text-slate-700">{rule}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               
-              {/* Types Selection */}
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="block text-sm font-medium text-slate-700">Question Types</label>
-                  <button 
-                    onClick={() => setConfig({...config, types: config.types.length === ALL_TYPES.length ? [] : ALL_TYPES})}
-                    className="text-xs text-primary-600 hover:text-primary-700 font-medium"
-                  >
-                    {config.types.length === ALL_TYPES.length ? 'Deselect All' : 'Select All'}
-                  </button>
-                </div>
-                <div className="border border-slate-300 rounded-lg p-2 space-y-1 bg-white">
-                  {ALL_TYPES.map(type => (
-                    <label key={type} className="flex items-center gap-2 p-1 hover:bg-slate-50 rounded cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={config.types.includes(type)}
-                        onChange={(e) => {
-                          const newTypes = e.target.checked 
-                            ? [...config.types, type] 
-                            : config.types.filter(t => t !== type);
-                          setConfig({...config, types: newTypes});
-                        }}
-                        className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
-                      />
-                      <span className="text-sm text-slate-700">{type}</span>
-                    </label>
-                  ))}
-                </div>
+              {/* Types Selection (Collapsible) */}
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <button 
+                  onClick={() => setIsTypesExpanded(!isTypesExpanded)}
+                  className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 transition-colors"
+                >
+                  <div className="text-left">
+                    <span className="block text-sm font-medium text-slate-800">Question Types</span>
+                    {!isTypesExpanded && (
+                      <span className="text-xs text-slate-500 mt-0.5 block">
+                        {config.types.length} selected {config.types.length > 0 ? `(${config.types.slice(0, 2).join(', ')}${config.types.length > 2 ? '...' : ''})` : ''}
+                      </span>
+                    )}
+                  </div>
+                  {isTypesExpanded ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+                </button>
+                
+                {isTypesExpanded && (
+                  <div className="p-3 bg-white border-t border-slate-200">
+                    <div className="flex justify-end mb-2">
+                      <button 
+                        onClick={() => setConfig({...config, types: config.types.length === ALL_TYPES.length ? [] : ALL_TYPES})}
+                        className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                      >
+                        {config.types.length === ALL_TYPES.length ? 'Deselect All' : 'Select All'}
+                      </button>
+                    </div>
+                    <div className="space-y-1">
+                      {ALL_TYPES.map(type => (
+                        <label key={type} className="flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={config.types.includes(type)}
+                            onChange={(e) => {
+                              const newTypes = e.target.checked 
+                                ? [...config.types, type] 
+                                : config.types.filter(t => t !== type);
+                              setConfig({...config, types: newTypes});
+                            }}
+                            className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
+                          />
+                          <span className="text-sm text-slate-700">{type}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Difficulty & Count */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 pt-2">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Difficulty</label>
                   <select 
                     value={config.difficulty} 
                     onChange={e => setConfig({...config, difficulty: e.target.value})}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white text-sm"
                   >
                     <option>Easy</option>
                     <option>Medium</option>
@@ -396,7 +429,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                     max="10" 
                     value={config.count}
                     onChange={e => setConfig({...config, count: Math.max(1, Math.min(10, parseInt(e.target.value) || 1))})}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white text-sm"
                   />
                 </div>
               </div>
@@ -417,37 +450,6 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                 {loading ? 'Generating...' : 'Generate Questions'}
               </button>
             </div>
-          </div>
-
-          {/* Lesson Upload Card */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <h2 className="text-lg font-semibold mb-2 flex items-center gap-2 text-slate-800">
-              <FileJson className="w-5 h-5 text-slate-500" />
-              Lesson Content
-            </h2>
-            <p className="text-sm text-slate-500 mb-4 leading-relaxed">
-              Upload a JSON file containing lesson text or vocabulary to base questions on.
-            </p>
-            
-            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <Upload className="w-8 h-8 mb-2 text-slate-400" />
-                <p className="text-sm text-slate-600"><span className="font-semibold text-primary-600">Click to upload</span> JSON</p>
-              </div>
-              <input type="file" accept=".json" className="hidden" onChange={handleFileUpload} />
-            </label>
-            {uploadMsg.text && (
-              <div className={`mt-3 flex items-center gap-1.5 text-xs font-medium p-2 rounded-md border ${uploadMsg.type === 'success' ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-rose-600 bg-rose-50 border-rose-100'}`}>
-                {uploadMsg.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                {uploadMsg.text}
-              </div>
-            )}
-            {lessonContent && !uploadMsg.text && (
-              <div className="mt-3 flex items-center gap-1.5 text-xs text-emerald-600 font-medium bg-emerald-50 p-2 rounded-md border border-emerald-100">
-                <CheckCircle className="w-4 h-4" />
-                Lesson content loaded and active
-              </div>
-            )}
           </div>
 
         </div>
@@ -650,7 +652,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
             &copy; {new Date().getFullYear()} Created by Dr. Peter Ramsis [El-Pedro] - +201550452122. All rights reserved.
           </p>
           <p className="text-slate-400 text-xs font-mono font-medium">
-            v1.0.001
+            v1.0.002
           </p>
         </div>
       </footer>
