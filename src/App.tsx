@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GoogleGenAI, Type } from '@google/genai';
 import { User, CheckCircle, XCircle, History, Trophy, Loader2, Play, ArrowRight, Settings, Rocket, Trash2, ChevronDown, ChevronUp, Search, Award, Share2, MessageSquare, FileText, FileUp, Upload, BookOpen, Volume2, PlayCircle, Info, Sparkles, Calendar, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -257,6 +257,22 @@ export default function App() {
 
   const [isRulesExpanded, setIsRulesExpanded] = useState(false);
   const [isTypesExpanded, setIsTypesExpanded] = useState(false);
+  
+  const rulesRef = useRef<HTMLDivElement>(null);
+  const typesRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (rulesRef.current && !rulesRef.current.contains(event.target as Node)) {
+        setIsRulesExpanded(false);
+      }
+      if (typesRef.current && !typesRef.current.contains(event.target as Node)) {
+        setIsTypesExpanded(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   const [rulesSearch, setRulesSearch] = useState('');
   const [typesSearch, setTypesSearch] = useState('');
 
@@ -829,7 +845,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                   </div>
 
                   {/* Rules Selection (Collapsible) */}
-              <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <div ref={rulesRef} className="border border-slate-200 rounded-lg overflow-hidden">
                 <button 
                   onClick={() => setIsRulesExpanded(!isRulesExpanded)}
                   className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 transition-colors"
@@ -907,7 +923,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
               </div>
               
               {/* Types Selection (Collapsible) */}
-              <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <div ref={typesRef} className="border border-slate-200 rounded-lg overflow-hidden">
                 <button 
                   onClick={() => setIsTypesExpanded(!isTypesExpanded)}
                   className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 transition-colors"
@@ -1031,6 +1047,41 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                   Give me a Fast Lesson
                 </button>
               </div>
+
+              {/* Grammar Flash Card Section */}
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="mt-6 p-5 bg-gradient-to-br from-[var(--theme-primary-600)] to-[var(--theme-primary-800)] rounded-2xl shadow-xl text-white relative overflow-hidden group"
+              >
+                <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
+                <div className="absolute -left-4 -bottom-4 w-24 h-24 bg-black/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
+                
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-1.5 bg-white/20 rounded-lg backdrop-blur-sm">
+                      <Rocket className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-widest opacity-80">Grammar Flash Card</span>
+                  </div>
+                  
+                  <h4 className="text-lg font-bold mb-2">Did you know?</h4>
+                  <p className="text-sm leading-relaxed opacity-90 italic">
+                    {config.rules.length > 0 
+                      ? `In ${config.rules[0]}, remember that consistency is key to mastering the nuances of English grammar.`
+                      : "Mastering the 'Present Simple' is the first step towards fluent English communication."}
+                  </p>
+                  
+                  <div className="mt-4 flex justify-end">
+                    <button 
+                      onClick={() => setActiveTab('library')}
+                      className="text-[10px] font-bold uppercase tracking-widest bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-full backdrop-blur-sm transition-colors flex items-center gap-1"
+                    >
+                      Explore Library <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
             </div>
           </div>
 
@@ -1427,8 +1478,8 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                   </div>
                   
                   <div className="space-y-4">
-                    {groupedHistory.map(([sessionId, attempts]) => {
-                      const isCollapsed = collapsedSessions[sessionId] ?? false;
+                    {groupedHistory.map(([sessionId, attempts], sIdx) => {
+                      const isCollapsed = collapsedSessions[sessionId] ?? (sIdx !== 0);
                       return (
                         <div key={sessionId} className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/30">
                           <button 
@@ -1460,7 +1511,17 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                                   className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm"
                                 >
                                   <div className="flex items-start justify-between gap-4 mb-3">
-                                    <p className="text-sm font-medium text-slate-900 leading-relaxed">{attempt.question}</p>
+                                    <div className="flex flex-col gap-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] rounded uppercase font-bold border border-slate-200">
+                                          {attempt.type}
+                                        </span>
+                                        <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] rounded uppercase font-bold border border-slate-200">
+                                          {attempt.rule}
+                                        </span>
+                                      </div>
+                                      <p className="text-sm font-medium text-slate-900 leading-relaxed">{attempt.question}</p>
+                                    </div>
                                     {attempt.isCorrect ? (
                                       <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
                                     ) : (
@@ -1472,16 +1533,25 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                                     <div>
                                       <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Your answer</span>
                                       <p className={`text-sm font-medium ${attempt.isCorrect ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                        {attempt.userAnswer}
+                                        {attempt.userAnswer || '(Empty)'}
                                       </p>
                                     </div>
                                     {!attempt.isCorrect && (
                                       <div>
-                                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Correct answer</span>
+                                        <span className="text-xs font-semibold text-rose-500 uppercase tracking-wider block mb-1">Correct answer</span>
                                         <p className="text-sm font-medium text-slate-900">{attempt.correctAnswer}</p>
                                       </div>
                                     )}
                                   </div>
+                                  
+                                  {!attempt.isCorrect && (
+                                    <div className="mt-3 p-3 bg-rose-50 rounded-lg border border-rose-100">
+                                      <span className="text-[10px] font-bold text-rose-600 uppercase tracking-widest block mb-1">Why it's wrong & Rule explanation</span>
+                                      <p className="text-xs text-rose-800 leading-relaxed">
+                                        {attempt.explanation}
+                                      </p>
+                                    </div>
+                                  )}
                                 </motion.div>
                               ))}
                             </div>
@@ -1571,7 +1641,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
           </div>
           <div className="flex items-center gap-3">
             <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] rounded font-mono font-bold border border-slate-200">
-              v1.0.011
+              v1.0.012
             </span>
             <div className="flex gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>

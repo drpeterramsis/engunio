@@ -143,3 +143,11 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - **Audio Playback Control**: Added a "Stop" button (toggles with Listen) to allow users to cancel speech playback.
 - **Clean Speech**: Implemented logic to strip underscores and dots from text before reading aloud, ensuring a more natural listening experience.
 - **Version Update**: Updated application version to 1.0.011.
+
+## Version 1.0.012 Updates
+- **Smart History Collapsing**: History sessions are now collapsed by default, except for the most recent one.
+- **Detailed Feedback in History**: Added question type tags and comprehensive explanations for incorrect answers (why it's wrong, correct answer, and rule explanation).
+- **Grammar Flash Cards**: Introduced a dynamic "Flash Card" section in the setup tab for quick grammar tips.
+- **UX Improvements**: Implemented "click outside" detection to automatically collapse grammar rule and question type selection menus.
+- **Design Overhaul**: Enhanced the overall UI with more professional gradients, shadows, and smooth motion animations.
+- **Version Update**: Updated application version to 1.0.012.
