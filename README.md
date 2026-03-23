@@ -82,3 +82,9 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - Added missing comprehensive grammar rules and question types (Matching, True/False, Sentence Ordering, etc.).
 - Fixed theme colors not applying to buttons and UI elements by defining CSS variables for all themes in index.css.
 - Updated version number to v1.0.003.
+
+## Version 1.0.004 Updates
+- Fixed the Gemini API quota exceeded error by switching the model to `gemini-3-flash-preview` which has higher free tier limits.
+- Added a search/filter bar to the Grammar Rules and Question Types sections to easily find specific rules and types.
+- Fixed the theme color selection for buttons and UI elements by updating Tailwind v4 CSS variables mapping.
+- Updated version number to v1.0.004.

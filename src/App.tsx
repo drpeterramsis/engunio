@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { GoogleGenAI, Type } from '@google/genai';
-import { User, CheckCircle, XCircle, History, Trophy, Loader2, Play, ArrowRight, Settings, Rocket, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { User, CheckCircle, XCircle, History, Trophy, Loader2, Play, ArrowRight, Settings, Rocket, Trash2, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const questionSchema = {
@@ -104,6 +104,28 @@ export default function App() {
 
   const [isRulesExpanded, setIsRulesExpanded] = useState(false);
   const [isTypesExpanded, setIsTypesExpanded] = useState(false);
+  const [rulesSearch, setRulesSearch] = useState('');
+  const [typesSearch, setTypesSearch] = useState('');
+
+  const filteredCategories = useMemo(() => {
+    const search = rulesSearch.toLowerCase();
+    if (!search) return GRAMMAR_CATEGORIES;
+    
+    const result: Record<string, string[]> = {};
+    Object.entries(GRAMMAR_CATEGORIES).forEach(([category, rules]) => {
+      const filteredRules = rules.filter(rule => rule.toLowerCase().includes(search));
+      if (filteredRules.length > 0) {
+        result[category] = filteredRules;
+      }
+    });
+    return result;
+  }, [rulesSearch]);
+
+  const filteredTypes = useMemo(() => {
+    const search = typesSearch.toLowerCase();
+    if (!search) return ALL_TYPES;
+    return ALL_TYPES.filter(type => type.toLowerCase().includes(search));
+  }, [typesSearch]);
 
   const [generatedQuestions, setGeneratedQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -194,7 +216,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
 `;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
+        model: 'gemini-3-flash-preview',
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -342,36 +364,52 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                 
                 {isRulesExpanded && (
                   <div className="p-3 bg-white border-t border-slate-200">
-                    <div className="flex justify-end mb-2">
-                      <button 
-                        onClick={() => setConfig({...config, rules: config.rules.length === ALL_RULES.length ? [] : ALL_RULES})}
-                        className="text-xs text-primary-600 hover:text-primary-700 font-medium"
-                      >
-                        {config.rules.length === ALL_RULES.length ? 'Deselect All' : 'Select All'}
-                      </button>
+                    <div className="flex flex-col gap-2 mb-3">
+                      <div className="relative">
+                        <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input 
+                          type="text" 
+                          placeholder="Search grammar rules..." 
+                          value={rulesSearch}
+                          onChange={(e) => setRulesSearch(e.target.value)}
+                          className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <button 
+                          onClick={() => setConfig({...config, rules: config.rules.length === ALL_RULES.length ? [] : ALL_RULES})}
+                          className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                        >
+                          {config.rules.length === ALL_RULES.length ? 'Deselect All' : 'Select All'}
+                        </button>
+                      </div>
                     </div>
                     <div className="max-h-64 overflow-y-auto space-y-4 pr-1">
-                      {Object.entries(GRAMMAR_CATEGORIES).map(([category, rules]) => (
-                        <div key={category} className="space-y-1">
-                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider px-1 mb-2">{category}</h4>
-                          {rules.map(rule => (
-                            <label key={rule} className="flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded cursor-pointer">
-                              <input 
-                                type="checkbox" 
-                                checked={config.rules.includes(rule)}
-                                onChange={(e) => {
-                                  const newRules = e.target.checked 
-                                    ? [...config.rules, rule] 
-                                    : config.rules.filter(r => r !== rule);
-                                  setConfig({...config, rules: newRules});
-                                }}
-                                className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
-                              />
-                              <span className="text-sm text-slate-700">{rule}</span>
-                            </label>
-                          ))}
-                        </div>
-                      ))}
+                      {Object.keys(filteredCategories).length === 0 ? (
+                        <p className="text-sm text-slate-500 text-center py-4">No rules found matching "{rulesSearch}"</p>
+                      ) : (
+                        Object.entries(filteredCategories).map(([category, rules]) => (
+                          <div key={category} className="space-y-1">
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider px-1 mb-2">{category}</h4>
+                            {rules.map(rule => (
+                              <label key={rule} className="flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded cursor-pointer">
+                                <input 
+                                  type="checkbox" 
+                                  checked={config.rules.includes(rule)}
+                                  onChange={(e) => {
+                                    const newRules = e.target.checked 
+                                      ? [...config.rules, rule] 
+                                      : config.rules.filter(r => r !== rule);
+                                    setConfig({...config, rules: newRules});
+                                  }}
+                                  className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
+                                />
+                                <span className="text-sm text-slate-700">{rule}</span>
+                              </label>
+                            ))}
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 )}
@@ -396,31 +434,47 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                 
                 {isTypesExpanded && (
                   <div className="p-3 bg-white border-t border-slate-200">
-                    <div className="flex justify-end mb-2">
-                      <button 
-                        onClick={() => setConfig({...config, types: config.types.length === ALL_TYPES.length ? [] : ALL_TYPES})}
-                        className="text-xs text-primary-600 hover:text-primary-700 font-medium"
-                      >
-                        {config.types.length === ALL_TYPES.length ? 'Deselect All' : 'Select All'}
-                      </button>
+                    <div className="flex flex-col gap-2 mb-3">
+                      <div className="relative">
+                        <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input 
+                          type="text" 
+                          placeholder="Search question types..." 
+                          value={typesSearch}
+                          onChange={(e) => setTypesSearch(e.target.value)}
+                          className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <button 
+                          onClick={() => setConfig({...config, types: config.types.length === ALL_TYPES.length ? [] : ALL_TYPES})}
+                          className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                        >
+                          {config.types.length === ALL_TYPES.length ? 'Deselect All' : 'Select All'}
+                        </button>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      {ALL_TYPES.map(type => (
-                        <label key={type} className="flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            checked={config.types.includes(type)}
-                            onChange={(e) => {
-                              const newTypes = e.target.checked 
-                                ? [...config.types, type] 
-                                : config.types.filter(t => t !== type);
-                              setConfig({...config, types: newTypes});
-                            }}
-                            className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
-                          />
-                          <span className="text-sm text-slate-700">{type}</span>
-                        </label>
-                      ))}
+                    <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
+                      {filteredTypes.length === 0 ? (
+                        <p className="text-sm text-slate-500 text-center py-4">No types found matching "{typesSearch}"</p>
+                      ) : (
+                        filteredTypes.map(type => (
+                          <label key={type} className="flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={config.types.includes(type)}
+                              onChange={(e) => {
+                                const newTypes = e.target.checked 
+                                  ? [...config.types, type] 
+                                  : config.types.filter(t => t !== type);
+                                setConfig({...config, types: newTypes});
+                              }}
+                              className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
+                            />
+                            <span className="text-sm text-slate-700">{type}</span>
+                          </label>
+                        ))
+                      )}
                     </div>
                   </div>
                 )}
@@ -671,7 +725,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
             &copy; {new Date().getFullYear()} Created by Dr. Peter Ramsis [El-Pedro] - +201550452122. All rights reserved.
           </p>
           <p className="text-slate-400 text-xs font-mono font-medium">
-            v1.0.003
+            v1.0.004
           </p>
         </div>
       </footer>
