@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GoogleGenAI, Type } from '@google/genai';
-import { User, CheckCircle, XCircle, History, Trophy, Loader2, Play, ArrowRight, Settings, Rocket, Trash2, ChevronDown, ChevronUp, Search, Award, Share2, MessageSquare, FileText, FileUp, Upload, BookOpen, Volume2, PlayCircle, Info, Sparkles, Calendar, Square, Printer, Minus, Plus } from 'lucide-react';
+import { User, CheckCircle, XCircle, History, Trophy, Loader2, Play, ArrowRight, Settings, Rocket, Trash2, ChevronDown, ChevronUp, Search, Award, Share2, MessageSquare, FileText, FileUp, Upload, BookOpen, Volume2, PlayCircle, Info, Sparkles, Calendar, Square, Printer, Minus, Plus, Moon, Sun, Flag, RotateCcw, Eraser } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 
@@ -359,6 +359,8 @@ export default function App() {
   const [isCorrecting, setIsCorrecting] = useState(false);
   const [printFontSize, setPrintFontSize] = useState(12);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [flaggedQuestions, setFlaggedQuestions] = useState<number[]>([]);
   
   const isListeningMode = config.types.includes('Listening Comprehension');
   const [isGeneratingLesson, setIsGeneratingLesson] = useState(false);
@@ -403,6 +405,9 @@ export default function App() {
 
     const savedTeacherMode = localStorage.getItem('isTeacherMode');
     if (savedTeacherMode) setConfig(prev => ({ ...prev, isTeacherMode: savedTeacherMode === 'true' }));
+
+    const savedDarkMode = localStorage.getItem('isDarkMode');
+    if (savedDarkMode) setIsDarkMode(savedDarkMode === 'true');
   }, []);
 
   useEffect(() => { localStorage.setItem('userName', userName); }, [userName]);
@@ -414,11 +419,12 @@ export default function App() {
   useEffect(() => { localStorage.setItem('configVoice', config.speechVoice); }, [config.speechVoice]);
   useEffect(() => { localStorage.setItem('configRate', config.speechRate.toString()); }, [config.speechRate]);
   useEffect(() => { localStorage.setItem('isTeacherMode', config.isTeacherMode.toString()); }, [config.isTeacherMode]);
+  useEffect(() => { localStorage.setItem('isDarkMode', isDarkMode.toString()); }, [isDarkMode]);
 
   // Apply theme class to body to ensure it cascades properly
   useEffect(() => {
-    document.body.className = `theme-${theme} bg-slate-50 text-slate-900 font-sans`;
-  }, [theme]);
+    document.body.className = `${isDarkMode ? 'dark' : ''} theme-${theme} ${isDarkMode ? 'bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-900'} font-sans transition-colors duration-300`;
+  }, [theme, isDarkMode]);
 
   const handleGenerate = async () => {
     if (config.rules.length === 0) {
@@ -455,6 +461,7 @@ export default function App() {
     setIsSubmitted(false);
     setSessionScore(0);
     setCurrentQuestionIndex(0);
+    setFlaggedQuestions([]);
     setShowCertificate(false);
     setActiveTab('practice');
 
@@ -477,7 +484,7 @@ Generate EXACTLY ${config.count} English learning question(s) based on the follo
 - Rules to cover: ${config.rules.join(', ')} (distribute questions among these rules)
 - Question Types: ${config.types.join(', ')} (distribute questions among these types)
 - Difficulty: ${config.difficulty}
-${isListeningMode ? "IMPORTANT: These are IELTS-style listening questions. For each question, you MUST provide a 'context' field which is a small paragraph or a series of sentences (like a dialogue or a short story) that the student will listen to. The 'question' field should then be a specific question about that context. CRITICAL: Do NOT include any underscores, dots, or placeholders like '_ _ _' in the 'context' or 'question' fields. The student will listen to the context and then answer the question. " : ""}
+${isListeningMode ? "IMPORTANT: These are IELTS-style listening questions. For each question, you MUST provide a 'context' field which is a small paragraph or a series of sentences (like a dialogue or a short story) that the student will listen to. The 'question' field should then be a specific question about that context. CRITICAL: The 'context' is what the student HEARS, and the 'question' is what they SEE. Do NOT include any underscores, dots, or placeholders like '_ _ _' in the 'context' or 'question' fields. The student will listen to the context and then answer the question. " : ""}
 
 INSTRUCTIONS:
 1. Generate EXACTLY ${config.count} question(s).
@@ -774,9 +781,16 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
             </div>
           </div>
           <div className="flex items-center gap-4 sm:gap-6">
-            <div className="flex items-center gap-2 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200">
+            <button 
+              onClick={() => setIsDarkMode(!isDarkMode)} 
+              className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
+              title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${isDarkMode ? 'bg-amber-900/20 border-amber-800/50 text-amber-400' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
               <Trophy className="w-4 h-4 text-amber-500" />
-              <span className="font-semibold text-amber-700 text-sm">
+              <span className="font-semibold text-sm">
                 {score.correct} / {score.total}
               </span>
             </div>
@@ -1415,12 +1429,30 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                     <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
                       <div className="flex items-center gap-2">
                         <Rocket className="w-6 h-6 text-[var(--theme-primary-600)]" />
-                        <h2 className="text-xl font-bold text-slate-800">Practice Session</h2>
+                        <h2 className={`text-xl font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>Practice Session</h2>
                       </div>
                       <div className="flex items-center gap-2">
+                        {!isSubmitted && (
+                          <button 
+                            onClick={() => {
+                              if (window.confirm('Are you sure you want to clear all your answers?')) {
+                                setUserAnswers({});
+                                setFlaggedQuestions([]);
+                              }
+                            }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                              isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                            }`}
+                          >
+                            <Eraser className="w-3.5 h-3.5" />
+                            Clear All
+                          </button>
+                        )}
                         <button 
                           onClick={() => handlePrint('Practice Session', 'practice', generatedQuestions.map((q, i) => ({ ...q, userAnswer: userAnswers[i], isCorrect: feedbacks[i]?.isCorrect })))}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors"
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                            isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                          }`}
                         >
                           <FileText className="w-3.5 h-3.5" />
                           Print Practice
@@ -1446,6 +1478,48 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                       </div>
                     </div>
 
+                    {/* Progress Counter */}
+                    <div className={`p-4 rounded-xl border flex flex-wrap items-center justify-between gap-4 ${
+                      isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200 shadow-sm'
+                    }`}>
+                      <div className="flex items-center gap-6">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Answered</span>
+                          <span className={`text-lg font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                            {Object.keys(userAnswers).length} / {generatedQuestions.length}
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Flagged</span>
+                          <span className={`text-lg font-bold ${flaggedQuestions.length > 0 ? 'text-amber-500' : (isDarkMode ? 'text-slate-500' : 'text-slate-400')}`}>
+                            {flaggedQuestions.length}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex-grow max-w-xs h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(Object.keys(userAnswers).length / generatedQuestions.length) * 100}%` }}
+                          className="h-full bg-[var(--theme-primary-600)]"
+                        />
+                      </div>
+                      {!isSubmitted && (
+                        <button 
+                          onClick={() => {
+                            setUserAnswers({});
+                            setFlaggedQuestions([]);
+                            setFeedbacks({});
+                          }}
+                          className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors border ${
+                            isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                          }`}
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          Clear All
+                        </button>
+                      )}
+                    </div>
+
                     {!isSubmitted ? (
                       <>
                         {examMode === 'exam' ? (
@@ -1453,21 +1527,68 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                             const feedback = feedbacks[index];
                             const isMCQ = q.choices && q.choices.length > 0;
                             const uAnswer = userAnswers[index] || '';
+                            const isFlagged = flaggedQuestions.includes(index);
 
                             return (
-                              <div key={index} className="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+                              <div key={index} className={`p-6 sm:p-8 rounded-xl shadow-sm border flex flex-col transition-colors ${
+                                isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+                              } ${isFlagged ? 'ring-2 ring-amber-500 ring-offset-2 dark:ring-offset-slate-900' : ''}`}>
                                 <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                                   <div className="flex items-center gap-2">
-                                    <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wider border border-slate-200">
+                                    <span className={`px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wider border ${
+                                      isDarkMode ? 'bg-slate-700 text-slate-300 border-slate-600' : 'bg-slate-100 text-slate-600 border-slate-200'
+                                    }`}>
                                       {config.types.length === 1 ? config.types[0] : 'Mixed Practice'}
                                     </span>
+                                    {isFlagged && (
+                                      <span className="flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-full uppercase tracking-wider border border-amber-200">
+                                        <Flag className="w-3 h-3 fill-current" />
+                                        Flagged
+                                      </span>
+                                    )}
                                   </div>
-                                  <span className="text-sm text-slate-500 font-medium flex items-center gap-1.5">
-                                    Question {index + 1} of {generatedQuestions.length}
-                                  </span>
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-sm text-slate-500 font-medium">
+                                      Question {index + 1} of {generatedQuestions.length}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      <button 
+                                        onClick={() => {
+                                          setFlaggedQuestions(prev => 
+                                            prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+                                          );
+                                        }}
+                                        className={`p-1.5 rounded-lg transition-colors ${
+                                          isFlagged 
+                                            ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' 
+                                            : (isDarkMode ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-400 hover:bg-slate-100')
+                                        }`}
+                                        title={isFlagged ? "Unflag question" : "Flag for revision"}
+                                      >
+                                        <Flag className={`w-4 h-4 ${isFlagged ? 'fill-current' : ''}`} />
+                                      </button>
+                                      {uAnswer && (
+                                        <button 
+                                          onClick={() => setUserAnswers(prev => {
+                                            const next = {...prev};
+                                            delete next[index];
+                                            return next;
+                                          })}
+                                          className={`p-1.5 rounded-lg transition-colors ${
+                                            isDarkMode ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-400 hover:bg-slate-100'
+                                          }`}
+                                          title="Clear selection"
+                                        >
+                                          <RotateCcw className="w-4 h-4" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
 
-                                <h3 className="text-xl sm:text-2xl font-medium text-slate-900 mb-8 leading-relaxed flex items-start gap-3">
+                                <h3 className={`text-xl sm:text-2xl font-medium mb-8 leading-relaxed flex items-start gap-3 ${
+                                  isDarkMode ? 'text-slate-100' : 'text-slate-900'
+                                }`}>
                                   {isListeningMode && (
                                     <button 
                                       onClick={() => speakingIndex === index ? handleStop() : handleSpeak(q.question, index, q.context)}
@@ -1496,7 +1617,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                                             className={`p-4 text-left rounded-xl border-2 transition-all ${
                                               uAnswer === choice 
                                                 ? 'border-[var(--theme-primary-600)] bg-[var(--theme-primary-50)] text-[var(--theme-primary-900)] shadow-sm' 
-                                                : 'border-slate-200 hover:border-[var(--theme-primary-300)] hover:bg-slate-50 text-slate-700'
+                                                : (isDarkMode ? 'border-slate-700 hover:border-[var(--theme-primary-400)] hover:bg-slate-800 text-slate-300' : 'border-slate-200 hover:border-[var(--theme-primary-300)] hover:bg-slate-50 text-slate-700')
                                             } ${isSubmitted ? 'cursor-default' : ''}`}
                                           >
                                             <span className="font-medium">{choice}</span>
@@ -1510,7 +1631,9 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                                         onChange={e => setUserAnswers(prev => ({...prev, [index]: e.target.value}))}
                                         disabled={isSubmitted}
                                         placeholder="Type your answer here..."
-                                        className="w-full p-4 text-lg rounded-xl border-2 border-slate-200 focus:border-[var(--theme-primary-600)] focus:ring-0 transition-colors bg-slate-50 focus:bg-white disabled:opacity-70"
+                                        className={`w-full p-4 text-lg rounded-xl border-2 focus:ring-0 transition-colors disabled:opacity-70 ${
+                                          isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-100 focus:border-[var(--theme-primary-500)]' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-[var(--theme-primary-600)] focus:bg-white'
+                                        }`}
                                       />
                                     )}
                                   </div>
@@ -1519,7 +1642,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                             );
                           })
                         ) : (
-                          <div className="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+                          <div className={`p-6 sm:p-8 rounded-xl shadow-sm border flex flex-col ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
                             {/* Question by Question Mode */}
                             {(() => {
                               const index = currentQuestionIndex;
@@ -1528,24 +1651,66 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                               const isMCQ = q.choices && q.choices.length > 0;
                               const uAnswer = userAnswers[index] || '';
                               const isAnswered = !!feedback;
+                              const isFlagged = flaggedQuestions.includes(index);
 
                               return (
                                 <>
                                   <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                                     <div className="flex items-center gap-2">
-                                      <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wider border border-slate-200">
+                                      <span className={`px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wider border ${
+                                        isDarkMode ? 'bg-slate-700 text-slate-300 border-slate-600' : 'bg-slate-100 text-slate-600 border-slate-200'
+                                      }`}>
                                         {q.rule}
                                       </span>
-                                      <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wider border border-slate-200">
-                                        {q.difficulty}
-                                      </span>
+                                      {isFlagged && (
+                                        <span className="flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-full uppercase tracking-wider border border-amber-200">
+                                          <Flag className="w-3 h-3 fill-current" />
+                                          Flagged
+                                        </span>
+                                      )}
                                     </div>
-                                    <span className="text-sm text-slate-500 font-medium flex items-center gap-1.5">
-                                      Question {index + 1} of {generatedQuestions.length}
-                                    </span>
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-sm text-slate-500 font-medium flex items-center gap-1.5">
+                                        Question {index + 1} of {generatedQuestions.length}
+                                      </span>
+                                      <div className="flex items-center gap-1">
+                                        <button 
+                                          onClick={() => {
+                                            setFlaggedQuestions(prev => 
+                                              prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+                                            );
+                                          }}
+                                          className={`p-1.5 rounded-lg transition-colors ${
+                                            isFlagged 
+                                              ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' 
+                                              : (isDarkMode ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-400 hover:bg-slate-100')
+                                          }`}
+                                          title={isFlagged ? "Unflag question" : "Flag for revision"}
+                                        >
+                                          <Flag className={`w-4 h-4 ${isFlagged ? 'fill-current' : ''}`} />
+                                        </button>
+                                        {!isAnswered && uAnswer && (
+                                          <button 
+                                            onClick={() => setUserAnswers(prev => {
+                                              const next = {...prev};
+                                              delete next[index];
+                                              return next;
+                                            })}
+                                            className={`p-1.5 rounded-lg transition-colors ${
+                                              isDarkMode ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-400 hover:bg-slate-100'
+                                            }`}
+                                            title="Clear selection"
+                                          >
+                                            <RotateCcw className="w-4 h-4" />
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
                                   </div>
 
-                                  <h3 className="text-xl sm:text-2xl font-medium text-slate-900 mb-8 leading-relaxed flex items-start gap-3">
+                                  <h3 className={`text-xl sm:text-2xl font-medium mb-8 leading-relaxed flex items-start gap-3 ${
+                                    isDarkMode ? 'text-slate-100' : 'text-slate-900'
+                                  }`}>
                                     {isListeningMode && (
                                       <button 
                                         onClick={() => speakingIndex === index ? handleStop() : handleSpeak(q.question, index, q.context)}
@@ -1574,7 +1739,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                                               className={`p-4 text-left rounded-xl border-2 transition-all ${
                                                 uAnswer === choice 
                                                   ? 'border-[var(--theme-primary-600)] bg-[var(--theme-primary-50)] text-[var(--theme-primary-900)] shadow-sm' 
-                                                  : 'border-slate-200 hover:border-[var(--theme-primary-300)] hover:bg-slate-50 text-slate-700'
+                                                  : (isDarkMode ? 'border-slate-700 hover:border-[var(--theme-primary-400)] hover:bg-slate-800 text-slate-300' : 'border-slate-200 hover:border-[var(--theme-primary-300)] hover:bg-slate-50 text-slate-700')
                                               } ${isAnswered ? 'cursor-default' : ''}`}
                                             >
                                               <span className="font-medium">{choice}</span>
@@ -1588,7 +1753,9 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                                           onChange={e => setUserAnswers(prev => ({...prev, [index]: e.target.value}))}
                                           disabled={isAnswered}
                                           placeholder="Type your answer here..."
-                                          className="w-full p-4 text-lg rounded-xl border-2 border-slate-200 focus:border-[var(--theme-primary-600)] focus:ring-0 transition-colors bg-slate-50 focus:bg-white disabled:opacity-70"
+                                          className={`w-full p-4 text-lg rounded-xl border-2 focus:ring-0 transition-colors disabled:opacity-70 ${
+                                            isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-100 focus:border-[var(--theme-primary-500)]' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-[var(--theme-primary-600)] focus:bg-white'
+                                          }`}
                                         />
                                       )}
                                     </div>
@@ -1599,33 +1766,35 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                                         animate={{ opacity: 1, height: 'auto' }}
                                         className={`mt-6 p-6 rounded-xl border ${
                                           feedback.isCorrect 
-                                            ? 'bg-emerald-50 border-emerald-200' 
-                                            : 'bg-rose-50 border-rose-200'
+                                            ? (isDarkMode ? 'bg-emerald-900/20 border-emerald-800/50' : 'bg-emerald-50 border-emerald-200')
+                                            : (isDarkMode ? 'bg-rose-900/20 border-rose-800/50' : 'bg-rose-50 border-rose-200')
                                         }`}
                                       >
                                         <div className="flex items-start gap-4">
                                           {feedback.isCorrect ? (
-                                            <CheckCircle className="w-8 h-8 text-emerald-600 shrink-0 mt-1" />
+                                            <CheckCircle className="w-8 h-8 text-emerald-500 shrink-0 mt-1" />
                                           ) : (
-                                            <XCircle className="w-8 h-8 text-rose-600 shrink-0 mt-1" />
+                                            <XCircle className="w-8 h-8 text-rose-500 shrink-0 mt-1" />
                                           )}
                                           <div className="flex-grow">
                                             <h4 className={`text-xl font-bold mb-2 ${
-                                              feedback.isCorrect ? 'text-emerald-800' : 'text-rose-800'
+                                              feedback.isCorrect ? (isDarkMode ? 'text-emerald-400' : 'text-emerald-800') : (isDarkMode ? 'text-rose-400' : 'text-rose-800')
                                             }`}>
                                               {feedback.isCorrect ? 'Excellent!' : 'Not quite right'}
                                             </h4>
                                             
                                             {!feedback.isCorrect && (
-                                              <div className="mb-4 p-3 bg-white rounded-lg border border-rose-100 shadow-sm">
+                                              <div className={`mb-4 p-3 rounded-lg border shadow-sm ${
+                                                isDarkMode ? 'bg-slate-800 border-rose-900/50' : 'bg-white border-rose-100'
+                                              }`}>
                                                 <span className="text-xs font-bold text-rose-500 uppercase tracking-wider block mb-1">Correct Answer</span>
-                                                <p className="text-slate-900 font-medium">{q.answer}</p>
+                                                <p className={isDarkMode ? 'text-slate-100' : 'text-slate-900'}>{q.answer}</p>
                                               </div>
                                             )}
                                             
                                             <div className="mb-2">
                                               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Explanation</span>
-                                              <p className="text-slate-700 leading-relaxed">
+                                              <p className={`leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                                                 {feedback.explanation}
                                               </p>
                                             </div>
@@ -1638,7 +1807,9 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                                       <button
                                         onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
                                         disabled={currentQuestionIndex === 0}
-                                        className="px-6 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 transition-colors"
+                                        className={`px-6 py-2 rounded-lg border transition-colors disabled:opacity-30 ${
+                                          isDarkMode ? 'border-slate-700 text-slate-400 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                        }`}
                                       >
                                         Previous
                                       </button>
@@ -1647,7 +1818,9 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                                         <button
                                           onClick={() => handleCheckAnswer(index)}
                                           disabled={!uAnswer}
-                                          className="px-8 py-2 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 disabled:opacity-50 transition-colors shadow-sm"
+                                          className={`px-8 py-2 rounded-lg font-medium transition-colors shadow-sm disabled:opacity-50 ${
+                                            isDarkMode ? 'bg-slate-100 text-slate-900 hover:bg-white' : 'bg-slate-900 text-white hover:bg-slate-800'
+                                          }`}
                                         >
                                           Check Answer
                                         </button>
@@ -1943,8 +2116,8 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] rounded font-mono font-bold border border-slate-200">
-              v1.0.018
+            <span className={`px-2 py-0.5 ${isDarkMode ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-500 border-slate-200'} text-[10px] rounded font-mono font-bold border`}>
+              v1.0.019
             </span>
             <div className="flex gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -2082,16 +2255,28 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                             {q.choices && q.choices.length > 0 && (
                               <div className="grid grid-cols-2 gap-2 mb-3">
                                 {q.choices.map((c: any, cIdx: number) => (
-                                  <div key={cIdx} className={`text-sm p-2 rounded border ${q.userAnswer === c ? (q.isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200') : 'border-slate-100'}`}>
+                                  <div key={cIdx} className={`text-sm p-2 rounded border ${
+                                    q.userAnswer === c 
+                                      ? ((config.isTeacherMode || isSubmitted) 
+                                          ? (q.isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200') 
+                                          : 'bg-slate-50 border-slate-300') 
+                                      : 'border-slate-100'
+                                  }`}>
                                     {String.fromCharCode(65 + cIdx)}. {c}
                                   </div>
                                 ))}
                               </div>
                             )}
                             <div className="text-sm space-y-1">
-                              <p className="font-medium">Correct Answer: <span className="text-emerald-600">{q.correctAnswer || q.answer}</span></p>
-                              {q.userAnswer && <p className="font-medium">Your Answer: <span className={q.isCorrect ? 'text-emerald-600' : 'text-rose-600'}>{q.userAnswer}</span></p>}
-                              <p className="text-slate-500 italic">Explanation: {q.explanation}</p>
+                              {(config.isTeacherMode || isSubmitted) ? (
+                                <>
+                                  <p className="font-medium">Correct Answer: <span className="text-emerald-600">{q.correctAnswer || q.answer}</span></p>
+                                  {q.userAnswer && <p className="font-medium">Your Answer: <span className={q.isCorrect ? 'text-emerald-600' : 'text-rose-600'}>{q.userAnswer}</span></p>}
+                                  <p className="text-slate-500 italic">Explanation: {q.explanation}</p>
+                                </>
+                              ) : (
+                                q.userAnswer && <p className="font-medium">Your Answer: <span className="text-slate-700">{q.userAnswer}</span></p>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -2206,25 +2391,30 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
 
             {(printData.type === 'session' || printData.type === 'practice') && (
               <div className="space-y-6">
-                {printData.data.map((q: any, idx: number) => (
-                  <div key={idx} className="border border-slate-100 p-4 rounded-lg break-inside-avoid">
-                    <p className="font-bold text-slate-800 mb-2">{idx + 1}. {q.question}</p>
-                    {q.choices && q.choices.length > 0 && (
-                      <div className="grid grid-cols-2 gap-2 mb-3">
-                        {q.choices.map((c: any, cIdx: number) => (
-                          <div key={cIdx} className={`text-sm p-2 rounded border ${q.userAnswer === c ? (q.isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200') : 'border-slate-100'}`}>
-                            {String.fromCharCode(65 + cIdx)}. {c}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="text-sm space-y-1">
-                      <p className="font-medium">Correct Answer: <span className="text-emerald-600">{q.correctAnswer || q.answer}</span></p>
-                      {q.userAnswer && <p className="font-medium">Your Answer: <span className={q.isCorrect ? 'text-emerald-600' : 'text-rose-600'}>{q.userAnswer}</span></p>}
-                      <p className="text-slate-500 italic">Explanation: {q.explanation}</p>
+                {printData.data.map((q: any, idx: number) => {
+                  const showAnswers = config.isTeacherMode || printData.type === 'session';
+                  return (
+                    <div key={idx} className="border border-slate-100 p-4 rounded-lg break-inside-avoid">
+                      <p className="font-bold text-slate-800 mb-2">{idx + 1}. {q.question}</p>
+                      {q.choices && q.choices.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2 mb-3">
+                          {q.choices.map((c: any, cIdx: number) => (
+                            <div key={cIdx} className={`text-sm p-2 rounded border ${q.userAnswer === c ? (q.isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200') : 'border-slate-100'}`}>
+                              {String.fromCharCode(65 + cIdx)}. {c}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {showAnswers && (
+                        <div className="text-sm space-y-1">
+                          <p className="font-medium">Correct Answer: <span className="text-emerald-600">{q.correctAnswer || q.answer}</span></p>
+                          {q.userAnswer && <p className="font-medium">Your Answer: <span className={q.isCorrect ? 'text-emerald-600' : 'text-rose-600'}>{q.userAnswer}</span></p>}
+                          <p className="text-slate-500 italic">Explanation: {q.explanation}</p>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 

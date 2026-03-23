@@ -191,3 +191,15 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - **Fixed Printing Issues**: Resolved a bug where not all questions were included in the printed output. Also implemented logic to hide scrollbars and optimize page breaks for multi-page exams.
 - **Enhanced Print Styling**: Applied global print-specific CSS to ensure clean, professional-looking reports and exams with proper margins and color adjustments.
 - **Version Update**: Updated application version to 1.0.018 across all configuration files and the UI footer.
+
+## Version 1.0.019 Updates
+- **Dark Mode Implementation**: Added a professional dark mode toggle to the header, allowing users to switch between light and dark themes. The entire application UI, including charts and modals, has been optimized for dark mode.
+- **Practice Mode Enhancements**:
+  - **Flagging Questions**: Users can now "flag" questions for revision during a practice session, with visual indicators for flagged items.
+  - **Clear Selection**: Added a "Clear Selection" button to individual questions to reset an answer before submission.
+  - **Clear All Button**: Introduced a "Clear All" button to reset all answers and flags in the current session.
+  - **Progress Counter**: Added a real-time counter showing the number of answered questions versus total questions, along with a count of flagged items.
+- **Student Mode Printing**: Modified the print logic for practice sessions to automatically hide answers, explanations, and feedback when "Teacher Mode" is disabled, ensuring student-friendly printouts.
+- **Listening Question Fix**: Resolved an issue where listening comprehension questions were not appearing correctly in certain configurations.
+- **UI/UX Refinements**: Improved the visual feedback for selected answers and added smooth transitions for theme switching.
+- **Version Update**: Updated application version to 1.0.019 across all configuration files and the UI footer.
