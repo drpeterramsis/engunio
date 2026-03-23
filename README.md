@@ -166,3 +166,21 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - **Speech Speed Control**: Added a speed slider (0.5x to 2.0x) to control the rate of listening comprehension audio.
 - **Persistent Settings**: Voice and speed preferences are automatically saved to local storage and restored on next visit.
 - **Version Update**: Updated application version to 1.0.015.
+
+## Version 1.0.016 Updates
+- **Grouped Listening Options**: All listening-related settings (toggle, voice, and speed) are now grouped into a single "Listening Comprehension" category.
+- **Conditional Activation**: Voice and speed controls are now only visible and active when Listening Comprehension is enabled, reducing UI clutter.
+- **Mobile-Friendly Question Count**: Added plus (+) and minus (-) buttons to the question count input for easier adjustment on mobile devices. Also implemented "select on focus" for the input field.
+- **Version Update**: Updated application version to 1.0.016.
+
+## Version 1.0.017 Updates
+- **Mobile Footer Spacing**: Added a spacer element to prevent the fixed footer from overlapping with the "Submit Answers" button and other critical UI elements on mobile devices.
+- **Comprehensive Printing**:
+  - **History Summary**: Added a "Print All Summary" button to the History tab, generating a detailed report of all user activity, including attempts, correct/wrong counts, and total duration.
+  - **Session Reports**: Each individual session in the history can now be printed as a standalone report.
+  - **Practice & Exams**: Users can print their current practice session, or generate clean "Exam Papers" (questions only) and "Model Answer Keys" (questions with answers and explanations).
+- **Teacher Mode**:
+  - **Exam Generation**: Introduced a "Teacher Mode" toggle in the Setup tab. When enabled, teachers can generate and print separate PDFs for exams and answer keys to send to students.
+  - **Auto-Correction**: Teachers can upload a student's completed work (PDF or image) to automatically extract answers using AI and grade them against the current session.
+- **Session Duration**: The app now tracks and records the duration of each practice session, displaying it in the history reports.
+- **Version Update**: Updated application version to 1.0.017 across all configuration files and the UI footer.

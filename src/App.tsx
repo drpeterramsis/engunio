@@ -47,6 +47,7 @@ interface Attempt {
   isCorrect: boolean;
   explanation: string;
   timestamp: number;
+  duration?: number; // Duration of the session in milliseconds
 }
 
 interface Question {
@@ -254,7 +255,8 @@ export default function App() {
     count: 1,
     useAcademyLibrary: false,
     speechVoice: '',
-    speechRate: 1.0
+    speechRate: 1.0,
+    isTeacherMode: false
   });
 
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
@@ -359,6 +361,13 @@ export default function App() {
   // New state for v1.0.010
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
+  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+  const [printData, setPrintData] = useState<{
+    title: string;
+    type: 'all-history' | 'session' | 'practice' | 'exam' | 'answer-key';
+    data: any;
+  } | null>(null);
+  const [isCorrecting, setIsCorrecting] = useState(false);
   
   const [theme, setTheme] = useState('indigo');
   const [showSettings, setShowSettings] = useState(false);
@@ -388,6 +397,9 @@ export default function App() {
 
     const savedRate = localStorage.getItem('configRate');
     if (savedRate) setConfig(prev => ({ ...prev, speechRate: parseFloat(savedRate) }));
+
+    const savedTeacherMode = localStorage.getItem('isTeacherMode');
+    if (savedTeacherMode) setConfig(prev => ({ ...prev, isTeacherMode: savedTeacherMode === 'true' }));
   }, []);
 
   useEffect(() => { localStorage.setItem('userName', userName); }, [userName]);
@@ -398,6 +410,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('configTypes', JSON.stringify(config.types)); }, [config.types]);
   useEffect(() => { localStorage.setItem('configVoice', config.speechVoice); }, [config.speechVoice]);
   useEffect(() => { localStorage.setItem('configRate', config.speechRate.toString()); }, [config.speechRate]);
+  useEffect(() => { localStorage.setItem('isTeacherMode', config.isTeacherMode.toString()); }, [config.isTeacherMode]);
 
   // Apply theme class to body to ensure it cascades properly
   useEffect(() => {
@@ -433,6 +446,7 @@ export default function App() {
     setLoading(true);
     setGeneratedQuestions([]);
     setCurrentSessionId(Date.now().toString());
+    setSessionStartTime(Date.now());
     setUserAnswers({});
     setFeedbacks({});
     setIsSubmitted(false);
@@ -588,6 +602,14 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
     setSpeakingIndex(null);
   };
 
+  const handlePrint = (title: string, type: 'all-history' | 'session' | 'practice' | 'exam' | 'answer-key', data: any) => {
+    setPrintData({ title, type, data });
+    setTimeout(() => {
+      window.print();
+      setPrintData(null);
+    }, 500);
+  };
+
   const handleCheckAnswer = (index: number) => {
     const q = generatedQuestions[index];
     const uAnswer = userAnswers[index] || '';
@@ -657,6 +679,8 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
     const newHistory: Attempt[] = [];
     const sessionId = currentSessionId || Date.now().toString();
 
+    const duration = sessionStartTime ? Date.now() - sessionStartTime : undefined;
+
     generatedQuestions.forEach((q, index) => {
       const uAnswer = userAnswers[index] || '';
       const normalize = (str: string) => str.toLowerCase().replace(/[.,!?]/g, '').trim();
@@ -684,7 +708,8 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
         correctAnswer: q.answer,
         isCorrect,
         explanation: q.explanation,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        duration
       });
     });
 
@@ -840,49 +865,234 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                   </div>
 
                   {/* Academy Library Selection */}
-                  <div className="border border-slate-200 rounded-lg p-4 bg-amber-50/30">
-                    <div className="flex items-center justify-between">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="border border-slate-200 rounded-lg p-4 bg-amber-50/30">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <BookOpen className="w-5 h-5 text-amber-600" />
+                          <span className="text-sm font-bold text-slate-800">Academy Series Library</span>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="sr-only peer" 
+                            checked={config.useAcademyLibrary}
+                            onChange={() => setConfig(prev => ({...prev, useAcademyLibrary: !prev.useAcademyLibrary}))}
+                          />
+                          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                        </label>
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-2">
+                        Questions based on Academy Series grammar rules.
+                      </p>
+                    </div>
+
+                    {/* Teacher Mode Selection */}
+                    <div className="border border-slate-200 rounded-lg p-4 bg-indigo-50/30">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Award className="w-5 h-5 text-indigo-600" />
+                          <span className="text-sm font-bold text-slate-800">Teacher Mode</span>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="sr-only peer" 
+                            checked={config.isTeacherMode}
+                            onChange={() => setConfig(prev => ({...prev, isTeacherMode: !prev.isTeacherMode}))}
+                          />
+                          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-2">
+                        Enable exam generation and model answers printing.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Listening Options Category */}
+                  <div className={`border rounded-lg overflow-hidden transition-all duration-300 ${isListeningMode ? 'border-[var(--theme-primary-300)] bg-[var(--theme-primary-50)]/30' : 'border-slate-200 bg-white'}`}>
+                    <div className="flex items-center justify-between p-3">
                       <div className="flex items-center gap-2">
-                        <BookOpen className="w-5 h-5 text-amber-600" />
-                        <span className="text-sm font-bold text-slate-800">Academy Series Library</span>
+                        <Volume2 className={`w-5 h-5 ${isListeningMode ? 'text-[var(--theme-primary-600)]' : 'text-slate-500'}`} />
+                        <div>
+                          <span className={`block text-sm font-bold ${isListeningMode ? 'text-[var(--theme-primary-900)]' : 'text-slate-800'}`}>Listening Comprehension</span>
+                          <span className="text-[10px] text-slate-500">Generate audio-based questions</span>
+                        </div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input 
                           type="checkbox" 
                           className="sr-only peer" 
-                          checked={config.useAcademyLibrary}
-                          onChange={() => setConfig(prev => ({...prev, useAcademyLibrary: !prev.useAcademyLibrary}))}
+                          checked={isListeningMode}
+                          onChange={() => setIsListeningMode(!isListeningMode)}
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
-                        <span className="ml-2 text-xs font-medium text-slate-600">{config.useAcademyLibrary ? 'Focus on Library' : 'General'}</span>
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--theme-primary-600)]"></div>
                       </label>
                     </div>
-                    <p className="text-[10px] text-slate-500 mt-2">
-                      When enabled, questions will be generated based on the Academy Series grammar rules and examples.
-                    </p>
+
+                    {/* Conditional Listening Settings */}
+                    <AnimatePresence>
+                      {isListeningMode && (
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden border-t border-[var(--theme-primary-200)]"
+                        >
+                          <div className="p-3 space-y-4 bg-white/50">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Voice Selection</label>
+                                <select 
+                                  value={config.speechVoice} 
+                                  onChange={e => setConfig({...config, speechVoice: e.target.value})}
+                                  className="w-full rounded-lg border border-slate-300 px-3 py-2 shadow-sm focus:border-[var(--theme-primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-primary-500)] bg-white text-xs"
+                                >
+                                  <option value="">Default Voice</option>
+                                  {voices.map(voice => (
+                                    <option key={voice.voiceURI} value={voice.voiceURI}>
+                                      {voice.name} ({voice.lang})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Speed: {config.speechRate}x</label>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <span className="text-[10px] text-slate-400">0.5x</span>
+                                  <input 
+                                    type="range" 
+                                    min="0.5" 
+                                    max="2" 
+                                    step="0.1"
+                                    value={config.speechRate}
+                                    onChange={e => setConfig({...config, speechRate: parseFloat(e.target.value)})}
+                                    className="flex-grow h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[var(--theme-primary-600)]"
+                                  />
+                                  <span className="text-[10px] text-slate-400">2x</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
-                  {/* Listening Option */}
-                  <div className="flex items-center justify-between p-3 border border-slate-200 rounded-lg bg-white">
-                    <div className="flex items-center gap-2">
-                      <Volume2 className="w-5 h-5 text-slate-500" />
-                      <div>
-                        <span className="block text-sm font-bold text-slate-800">Listening Comprehension</span>
-                        <span className="text-[10px] text-slate-500">Generate audio-based questions</span>
+                  {/* Teacher Mode Section */}
+                  {config.isTeacherMode && (
+                    <div className="border border-indigo-200 rounded-lg p-4 bg-indigo-50/50 space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Award className="w-5 h-5 text-indigo-600" />
+                        <h3 className="text-sm font-bold text-slate-800">Teacher Tools</h3>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Auto-Correct Student PDF</label>
+                          <div className="relative">
+                            <input 
+                              type="file" 
+                              accept=".pdf,image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file || generatedQuestions.length === 0) return;
+                                
+                                setIsCorrecting(true);
+                                try {
+                                  // Convert file to base64
+                                  const reader = new FileReader();
+                                  const base64Promise = new Promise<string>((resolve) => {
+                                    reader.onload = () => resolve(reader.result as string);
+                                    reader.readAsDataURL(file);
+                                  });
+                                  const base64 = await base64Promise;
+                                  const base64Data = base64.split(',')[1];
+
+                                  let apiKey = '';
+                                  try {
+                                    apiKey = typeof process !== 'undefined' && process.env ? process.env.GEMINI_API_KEY || '' : '';
+                                  } catch (e) {}
+                                  if (!apiKey) {
+                                    try {
+                                      apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+                                    } catch (e) {}
+                                  }
+
+                                  const ai = new GoogleGenAI({ apiKey });
+                                  const prompt = `
+                                    You are an expert English teacher. I am providing a student's answer sheet (PDF or Image).
+                                    I will also provide the model questions and answers.
+                                    Extract the student's answers from the file and compare them with the model answers.
+                                    Return a JSON object with the extracted answers for each question index.
+                                    
+                                    Model Questions:
+                                    ${generatedQuestions.map((q, i) => `${i + 1}. ${q.question} (Answer: ${q.answer})`).join('\n')}
+                                    
+                                    Return format: {"answers": {"0": "student answer 1", "1": "student answer 2", ...}}
+                                  `;
+
+                                  const response = await ai.models.generateContent({
+                                    model: 'gemini-3-flash-preview',
+                                    contents: [
+                                      { text: prompt },
+                                      { inlineData: { data: base64Data, mimeType: file.type } }
+                                    ],
+                                    config: {
+                                      responseMimeType: "application/json",
+                                      responseSchema: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                          answers: {
+                                            type: Type.OBJECT,
+                                            additionalProperties: { type: Type.STRING }
+                                          }
+                                        },
+                                        required: ["answers"]
+                                      }
+                                    }
+                                  });
+
+                                  const result = JSON.parse(response.text);
+                                  if (result.answers) {
+                                    setUserAnswers(prev => ({ ...prev, ...result.answers }));
+                                    handleSubmitAll();
+                                  }
+                                } catch (error) {
+                                  console.error("Correction error:", error);
+                                  setErrorMsg("Failed to auto-correct the file. Please try again.");
+                                } finally {
+                                  setIsCorrecting(false);
+                                }
+                              }}
+                              className="hidden" 
+                              id="teacher-file-upload"
+                            />
+                            <label 
+                              htmlFor="teacher-file-upload"
+                              className={`flex items-center justify-center gap-2 w-full p-3 border-2 border-dashed border-indigo-300 rounded-lg cursor-pointer hover:bg-indigo-100 transition-colors ${isCorrecting ? 'opacity-50 cursor-wait' : ''}`}
+                            >
+                              {isCorrecting ? (
+                                <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+                              ) : (
+                                <Upload className="w-5 h-5 text-indigo-600" />
+                              )}
+                              <span className="text-xs font-bold text-indigo-700">
+                                {isCorrecting ? 'Analyzing...' : 'Upload Student Work'}
+                              </span>
+                            </label>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col justify-end">
+                          <p className="text-[10px] text-slate-500 italic">
+                            Upload a student's completed exam (PDF or photo) to automatically extract their answers and grade them against the current session.
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer" 
-                        checked={isListeningMode}
-                        onChange={() => setIsListeningMode(!isListeningMode)}
-                      />
-                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--theme-primary-600)]"></div>
-                    </label>
-                  </div>
-
-                  {/* Rules Selection (Collapsible) */}
+                  )}
               <div ref={rulesRef} className="border border-slate-200 rounded-lg overflow-hidden">
                 <button 
                   onClick={() => setIsRulesExpanded(!isRulesExpanded)}
@@ -1049,14 +1259,29 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Questions</label>
-                  <input 
-                    type="number" 
-                    min="1" 
-                    max="10" 
-                    value={config.count}
-                    onChange={e => setConfig({...config, count: Math.max(1, Math.min(10, parseInt(e.target.value) || 1))})}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 shadow-sm focus:border-[var(--theme-primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-primary-500)] bg-white text-sm"
-                  />
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setConfig({...config, count: Math.max(1, config.count - 1)})}
+                      className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-600 transition-colors"
+                    >
+                      -
+                    </button>
+                    <input 
+                      type="number" 
+                      min="1" 
+                      max="10" 
+                      value={config.count}
+                      onFocus={(e) => e.target.select()}
+                      onChange={e => setConfig({...config, count: Math.max(1, Math.min(10, parseInt(e.target.value) || 1))})}
+                      className="flex-grow rounded-lg border border-slate-300 px-3 py-2 shadow-sm focus:border-[var(--theme-primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-primary-500)] bg-white text-sm text-center font-bold"
+                    />
+                    <button 
+                      onClick={() => setConfig({...config, count: Math.min(10, config.count + 1)})}
+                      className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-600 transition-colors"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1248,6 +1473,40 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                     animate={{ opacity: 1, y: 0 }}
                     className="space-y-8"
                   >
+                    <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Rocket className="w-6 h-6 text-[var(--theme-primary-600)]" />
+                        <h2 className="text-xl font-bold text-slate-800">Practice Session</h2>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => handlePrint('Practice Session', 'practice', generatedQuestions.map((q, i) => ({ ...q, userAnswer: userAnswers[i], isCorrect: feedbacks[i]?.isCorrect })))}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          Print Practice
+                        </button>
+                        {config.isTeacherMode && (
+                          <>
+                            <button 
+                              onClick={() => handlePrint('Exam Paper', 'exam', generatedQuestions)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg text-xs font-bold transition-colors"
+                            >
+                              <Award className="w-3.5 h-3.5" />
+                              Print Exam
+                            </button>
+                            <button 
+                              onClick={() => handlePrint('Model Answer Key', 'answer-key', generatedQuestions)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-xs font-bold transition-colors"
+                            >
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              Print Key
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
                     {!isSubmitted ? (
                       <>
                         {examMode === 'exam' ? (
@@ -1543,10 +1802,19 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
               {history.length > 0 ? (
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-semibold flex items-center gap-2 text-slate-800">
-                      <History className="w-5 h-5 text-slate-500" />
-                      Recent History
-                    </h2>
+                    <div className="flex items-center gap-4">
+                      <h2 className="text-lg font-semibold flex items-center gap-2 text-slate-800">
+                        <History className="w-5 h-5 text-slate-500" />
+                        Recent History
+                      </h2>
+                      <button 
+                        onClick={() => handlePrint('Full Activity Summary', 'all-history', history)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        Print All Summary
+                      </button>
+                    </div>
                     <span className="text-sm text-slate-500">{history.length} attempts</span>
                   </div>
                   
@@ -1566,6 +1834,18 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                               </h3>
                             </div>
                             <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-2 mr-2">
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handlePrint(`Session Report - ${formatSessionDate(sessionId)}`, 'session', attempts);
+                                  }}
+                                  className="p-1.5 text-slate-400 hover:text-[var(--theme-primary-600)] hover:bg-[var(--theme-primary-50)] rounded-md transition-all"
+                                  title="Print Session"
+                                >
+                                  <FileText className="w-4 h-4" />
+                                </button>
+                              </div>
                               <div className="flex items-center gap-3 mr-2">
                                 <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
                                   <CheckCircle className="w-3 h-3" /> {attempts.filter(a => a.isCorrect).length}
@@ -1706,10 +1986,13 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
             </motion.div>
           )}
         </div>
+        
+        {/* Spacer for fixed footer */}
+        <div className="h-24 sm:h-20"></div>
       </main>
 
       {/* Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-slate-200 py-3 z-40">
+      <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-slate-200 py-3 z-40 print:hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-2">
           <div className="flex items-center gap-4">
             <p className="text-slate-600 text-xs font-medium">
@@ -1722,7 +2005,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
           </div>
           <div className="flex items-center gap-3">
             <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] rounded font-mono font-bold border border-slate-200">
-              v1.0.015
+              v1.0.017
             </span>
             <div className="flex gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -1731,6 +2014,143 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
           </div>
         </div>
       </footer>
+
+      {/* Print Report Component */}
+      {printData && (
+        <div className="hidden print:block fixed inset-0 bg-white z-[100] p-8 overflow-auto">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center justify-between border-b-2 border-slate-800 pb-4 mb-8">
+              <div>
+                <h1 className="text-3xl font-bold text-slate-900">ENGUNIO - English Grammar Master</h1>
+                <p className="text-slate-600 font-medium">Report: {printData.title}</p>
+                {printData.data.duration && (
+                  <p className="text-slate-500 text-sm">Duration: {Math.floor(printData.data.duration / 60000)}m {Math.floor((printData.data.duration % 60000) / 1000)}s</p>
+                )}
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-bold text-slate-800">Student: {userName || 'Guest'}</p>
+                <p className="text-xs text-slate-500">Date: {new Date().toLocaleDateString()}</p>
+              </div>
+            </div>
+
+            {printData.type === 'all-history' && (
+              <div className="space-y-8">
+                {Object.entries(
+                  printData.data.reduce((acc: any, attempt: any) => {
+                    if (!acc[attempt.sessionId]) acc[attempt.sessionId] = [];
+                    acc[attempt.sessionId].push(attempt);
+                    return acc;
+                  }, {})
+                ).map(([sessionId, attempts]: [string, any]) => {
+                  const correct = attempts.filter((a: any) => a.isCorrect).length;
+                  const total = attempts.length;
+                  const firstAttempt = attempts[0];
+                  return (
+                    <div key={sessionId} className="border border-slate-200 rounded-lg p-6 break-inside-avoid">
+                      <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
+                        <h3 className="font-bold text-lg">Session: {new Date(firstAttempt.timestamp).toLocaleString()}</h3>
+                        <span className="font-bold text-[var(--theme-primary-700)]">Score: {correct}/{total} ({Math.round((correct/total)*100)}%)</span>
+                      </div>
+                      <div className="space-y-4">
+                        {attempts.map((a: any, idx: number) => (
+                          <div key={idx} className="text-sm">
+                            <p className="font-medium mb-1">{idx + 1}. {a.question}</p>
+                            <p className={`${a.isCorrect ? 'text-emerald-600' : 'text-rose-600'} flex gap-2`}>
+                              <span>Your Answer: {a.userAnswer || '(No answer)'}</span>
+                              {!a.isCorrect && <span>• Correct: {a.correctAnswer}</span>}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {(printData.type === 'session' || printData.type === 'practice') && (
+              <div className="space-y-6">
+                {printData.data.map((q: any, idx: number) => (
+                  <div key={idx} className="border border-slate-100 p-4 rounded-lg break-inside-avoid">
+                    <p className="font-bold text-slate-800 mb-2">{idx + 1}. {q.question}</p>
+                    {q.choices && q.choices.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        {q.choices.map((c: any, cIdx: number) => (
+                          <div key={cIdx} className={`text-sm p-2 rounded border ${q.userAnswer === c ? (q.isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200') : 'border-slate-100'}`}>
+                            {String.fromCharCode(65 + cIdx)}. {c}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="text-sm space-y-1">
+                      <p className="font-medium">Correct Answer: <span className="text-emerald-600">{q.correctAnswer || q.answer}</span></p>
+                      {q.userAnswer && <p className="font-medium">Your Answer: <span className={q.isCorrect ? 'text-emerald-600' : 'text-rose-600'}>{q.userAnswer}</span></p>}
+                      <p className="text-slate-500 italic">Explanation: {q.explanation}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {(printData.type === 'exam' || printData.type === 'answer-key') && (
+              <div className="space-y-8">
+                {/* Group by Question Type */}
+                {Object.entries(
+                  printData.data.reduce((acc: any, q: any) => {
+                    const type = q.type || 'General';
+                    if (!acc[type]) acc[type] = [];
+                    acc[type].push(q);
+                    return acc;
+                  }, {})
+                ).map(([type, questions]: [string, any]) => (
+                  <div key={type} className="space-y-4">
+                    <h3 className="text-xl font-bold text-slate-800 border-b border-slate-200 pb-2 uppercase tracking-wider">{type}</h3>
+                    <div className="space-y-6">
+                      {questions.map((q: any, idx: number) => (
+                        <div key={idx} className="break-inside-avoid">
+                          <p className="font-bold text-slate-900 mb-3">{idx + 1}. {q.question}</p>
+                          {q.choices && q.choices.length > 0 && (
+                            <div className="grid grid-cols-2 gap-4 ml-4 mb-3">
+                              {q.choices.map((c: any, cIdx: number) => (
+                                <div key={cIdx} className="text-sm flex items-center gap-2">
+                                  <div className="w-4 h-4 rounded-full border border-slate-400"></div>
+                                  <span>{String.fromCharCode(65 + cIdx)}. {c}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {printData.type === 'answer-key' && (
+                            <div className="mt-2 p-3 bg-slate-50 rounded border border-slate-200 text-sm">
+                              <p className="font-bold text-emerald-700">Correct Answer: {q.answer}</p>
+                              <p className="text-slate-600 italic">Explanation: {q.explanation}</p>
+                            </div>
+                          )}
+                          {printData.type === 'exam' && <div className="h-8"></div>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-12 pt-8 border-t border-slate-200 text-center text-slate-400 text-xs">
+              <p>Generated by ENGUNIO - English Grammar Master</p>
+              <p>© {new Date().getFullYear()} Dr. Peter Ramsis [El-Pedro]</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Global Print Styles */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          body { background: white !important; }
+          .no-print { display: none !important; }
+          @page { margin: 2cm; }
+          .break-inside-avoid { break-inside: avoid; }
+        }
+      `}} />
 
       {/* Certificate Modal */}
       <AnimatePresence>
