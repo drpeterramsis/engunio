@@ -184,3 +184,10 @@ During the Vercel import process, you will see an "Environment Variables" sectio
   - **Auto-Correction**: Teachers can upload a student's completed work (PDF or image) to automatically extract answers using AI and grade them against the current session.
 - **Session Duration**: The app now tracks and records the duration of each practice session, displaying it in the history reports.
 - **Version Update**: Updated application version to 1.0.017 across all configuration files and the UI footer.
+
+## Version 1.0.018 Updates
+- **Refined Listening Settings**: Grouped listening comprehension settings (voice, speed) directly under the "Listening Comprehension" question type selection. These settings are now only visible when the listening type is selected, streamlining the setup process.
+- **Print Preview Modal**: Introduced a professional print preview modal that appears before printing. Users can now adjust the font size (8px to 24px) to ensure the exam fits perfectly on the page.
+- **Fixed Printing Issues**: Resolved a bug where not all questions were included in the printed output. Also implemented logic to hide scrollbars and optimize page breaks for multi-page exams.
+- **Enhanced Print Styling**: Applied global print-specific CSS to ensure clean, professional-looking reports and exams with proper margins and color adjustments.
+- **Version Update**: Updated application version to 1.0.018 across all configuration files and the UI footer.

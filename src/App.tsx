@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GoogleGenAI, Type } from '@google/genai';
-import { User, CheckCircle, XCircle, History, Trophy, Loader2, Play, ArrowRight, Settings, Rocket, Trash2, ChevronDown, ChevronUp, Search, Award, Share2, MessageSquare, FileText, FileUp, Upload, BookOpen, Volume2, PlayCircle, Info, Sparkles, Calendar, Square } from 'lucide-react';
+import { User, CheckCircle, XCircle, History, Trophy, Loader2, Play, ArrowRight, Settings, Rocket, Trash2, ChevronDown, ChevronUp, Search, Award, Share2, MessageSquare, FileText, FileUp, Upload, BookOpen, Volume2, PlayCircle, Info, Sparkles, Calendar, Square, Printer, Minus, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 
@@ -99,7 +99,7 @@ const ALL_RULES = Object.values(GRAMMAR_CATEGORIES).flat().sort();
 
 // Expanded and sorted question types
 const ALL_TYPES = [
-  'Error Correction', 'Fill in the blank', 'Matching', 'MCQ', 'Rewrite', 'Sentence Ordering', 'Short Answer', 'True/False', 'Word Formation'
+  'Error Correction', 'Fill in the blank', 'Listening Comprehension', 'Matching', 'MCQ', 'Rewrite', 'Sentence Ordering', 'Short Answer', 'True/False', 'Word Formation'
 ].sort();
 
 const THEMES = [
@@ -356,7 +356,11 @@ export default function App() {
   const [generationProgress, setGenerationProgress] = useState(0);
   const [showFastLesson, setShowFastLesson] = useState(false);
   const [fastLessonContent, setFastLessonContent] = useState<string | null>(null);
-  const [isListeningMode, setIsListeningMode] = useState(false);
+  const [isCorrecting, setIsCorrecting] = useState(false);
+  const [printFontSize, setPrintFontSize] = useState(12);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
+  
+  const isListeningMode = config.types.includes('Listening Comprehension');
   const [isGeneratingLesson, setIsGeneratingLesson] = useState(false);
   // New state for v1.0.010
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -367,7 +371,6 @@ export default function App() {
     type: 'all-history' | 'session' | 'practice' | 'exam' | 'answer-key';
     data: any;
   } | null>(null);
-  const [isCorrecting, setIsCorrecting] = useState(false);
   
   const [theme, setTheme] = useState('indigo');
   const [showSettings, setShowSettings] = useState(false);
@@ -604,10 +607,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
 
   const handlePrint = (title: string, type: 'all-history' | 'session' | 'practice' | 'exam' | 'answer-key', data: any) => {
     setPrintData({ title, type, data });
-    setTimeout(() => {
-      window.print();
-      setPrintData(null);
-    }, 500);
+    setShowPrintPreview(true);
   };
 
   const handleCheckAnswer = (index: number) => {
@@ -910,76 +910,6 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                     </div>
                   </div>
 
-                  {/* Listening Options Category */}
-                  <div className={`border rounded-lg overflow-hidden transition-all duration-300 ${isListeningMode ? 'border-[var(--theme-primary-300)] bg-[var(--theme-primary-50)]/30' : 'border-slate-200 bg-white'}`}>
-                    <div className="flex items-center justify-between p-3">
-                      <div className="flex items-center gap-2">
-                        <Volume2 className={`w-5 h-5 ${isListeningMode ? 'text-[var(--theme-primary-600)]' : 'text-slate-500'}`} />
-                        <div>
-                          <span className={`block text-sm font-bold ${isListeningMode ? 'text-[var(--theme-primary-900)]' : 'text-slate-800'}`}>Listening Comprehension</span>
-                          <span className="text-[10px] text-slate-500">Generate audio-based questions</span>
-                        </div>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={isListeningMode}
-                          onChange={() => setIsListeningMode(!isListeningMode)}
-                        />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--theme-primary-600)]"></div>
-                      </label>
-                    </div>
-
-                    {/* Conditional Listening Settings */}
-                    <AnimatePresence>
-                      {isListeningMode && (
-                        <motion.div 
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="overflow-hidden border-t border-[var(--theme-primary-200)]"
-                        >
-                          <div className="p-3 space-y-4 bg-white/50">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Voice Selection</label>
-                                <select 
-                                  value={config.speechVoice} 
-                                  onChange={e => setConfig({...config, speechVoice: e.target.value})}
-                                  className="w-full rounded-lg border border-slate-300 px-3 py-2 shadow-sm focus:border-[var(--theme-primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-primary-500)] bg-white text-xs"
-                                >
-                                  <option value="">Default Voice</option>
-                                  {voices.map(voice => (
-                                    <option key={voice.voiceURI} value={voice.voiceURI}>
-                                      {voice.name} ({voice.lang})
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Speed: {config.speechRate}x</label>
-                                <div className="flex items-center gap-2 mt-2">
-                                  <span className="text-[10px] text-slate-400">0.5x</span>
-                                  <input 
-                                    type="range" 
-                                    min="0.5" 
-                                    max="2" 
-                                    step="0.1"
-                                    value={config.speechRate}
-                                    onChange={e => setConfig({...config, speechRate: parseFloat(e.target.value)})}
-                                    className="flex-grow h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[var(--theme-primary-600)]"
-                                  />
-                                  <span className="text-[10px] text-slate-400">2x</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
                   {/* Teacher Mode Section */}
                   {config.isTeacherMode && (
                     <div className="border border-indigo-200 rounded-lg p-4 bg-indigo-50/50 space-y-4">
@@ -1222,20 +1152,63 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                         <p className="text-sm text-slate-500 text-center py-4">No types found matching "{typesSearch}"</p>
                       ) : (
                         filteredTypes.map(type => (
-                          <label key={type} className="flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded cursor-pointer">
-                            <input 
-                              type="checkbox" 
-                              checked={config.types.includes(type)}
-                              onChange={(e) => {
-                                const newTypes = e.target.checked 
-                                  ? [...config.types, type] 
-                                  : config.types.filter(t => t !== type);
-                                setConfig({...config, types: newTypes});
-                              }}
-                              className="rounded border-slate-300 text-[var(--theme-primary-600)] focus:ring-[var(--theme-primary-500)] w-4 h-4"
-                            />
-                            <span className="text-sm text-slate-700">{type}</span>
-                          </label>
+                          <div key={type} className="space-y-2">
+                            <label className="flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                checked={config.types.includes(type)}
+                                onChange={(e) => {
+                                  const newTypes = e.target.checked 
+                                    ? [...config.types, type] 
+                                    : config.types.filter(t => t !== type);
+                                  setConfig({...config, types: newTypes});
+                                }}
+                                className="rounded border-slate-300 text-[var(--theme-primary-600)] focus:ring-[var(--theme-primary-50)] w-4 h-4"
+                              />
+                              <span className="text-sm text-slate-700">{type}</span>
+                            </label>
+                            
+                            {/* Grouped Listening Options (Voice & Speed) */}
+                            {type === 'Listening Comprehension' && config.types.includes('Listening Comprehension') && (
+                              <motion.div 
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                className="ml-6 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-3 mb-2"
+                              >
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Voice Selection</label>
+                                  <select 
+                                    value={config.speechVoice} 
+                                    onChange={e => setConfig({...config, speechVoice: e.target.value})}
+                                    className="w-full rounded-lg border border-slate-300 px-2 py-1.5 shadow-sm focus:border-[var(--theme-primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-primary-500)] bg-white text-[10px]"
+                                  >
+                                    <option value="">Default Voice</option>
+                                    {voices.map(voice => (
+                                      <option key={voice.voiceURI} value={voice.voiceURI}>
+                                        {voice.name} ({voice.lang})
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Speed: {config.speechRate}x</label>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-[9px] text-slate-400">0.5x</span>
+                                    <input 
+                                      type="range" 
+                                      min="0.5" 
+                                      max="2" 
+                                      step="0.1"
+                                      value={config.speechRate}
+                                      onChange={e => setConfig({...config, speechRate: parseFloat(e.target.value)})}
+                                      className="flex-grow h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[var(--theme-primary-600)]"
+                                    />
+                                    <span className="text-[9px] text-slate-400">2x</span>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </div>
                         ))
                       )}
                     </div>
@@ -1285,40 +1258,6 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                 </div>
               </div>
 
-              {/* Voice & Speed Controls */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Voice</label>
-                  <select 
-                    value={config.speechVoice} 
-                    onChange={e => setConfig({...config, speechVoice: e.target.value})}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 shadow-sm focus:border-[var(--theme-primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-primary-500)] bg-white text-sm"
-                  >
-                    <option value="">Default Voice</option>
-                    {voices.map(voice => (
-                      <option key={voice.voiceURI} value={voice.voiceURI}>
-                        {voice.name} ({voice.lang})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Speed: {config.speechRate}x</label>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-[10px] text-slate-400">0.5x</span>
-                    <input 
-                      type="range" 
-                      min="0.5" 
-                      max="2" 
-                      step="0.1"
-                      value={config.speechRate}
-                      onChange={e => setConfig({...config, speechRate: parseFloat(e.target.value)})}
-                      className="flex-grow h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[var(--theme-primary-600)]"
-                    />
-                    <span className="text-[10px] text-slate-400">2x</span>
-                  </div>
-                </div>
-              </div>
 
               {errorMsg && (
                 <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-lg text-sm text-rose-700 flex items-start gap-2">
@@ -2005,7 +1944,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
           </div>
           <div className="flex items-center gap-3">
             <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] rounded font-mono font-bold border border-slate-200">
-              v1.0.017
+              v1.0.018
             </span>
             <div className="flex gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -2015,13 +1954,210 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
         </div>
       </footer>
 
-      {/* Print Report Component */}
+      {/* Print Preview Modal */}
+      <AnimatePresence>
+        {showPrintPreview && printData && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-[100] p-4 backdrop-blur-sm no-print"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-100"
+            >
+              <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-[var(--theme-primary-100)] rounded-lg">
+                    <Printer className="w-5 h-5 text-[var(--theme-primary-600)]" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-800 leading-tight">Print Preview</h2>
+                    <p className="text-xs text-slate-500 font-medium">{printData.title}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+                  <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Font Size: {printFontSize}px</span>
+                    <input 
+                      type="range" 
+                      min="8" 
+                      max="24" 
+                      value={printFontSize}
+                      onChange={(e) => setPrintFontSize(parseInt(e.target.value))}
+                      className="w-24 sm:w-32 h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[var(--theme-primary-600)]"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => {
+                        window.print();
+                        setShowPrintPreview(false);
+                        setPrintData(null);
+                      }}
+                      className="bg-[var(--theme-primary-600)] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-[var(--theme-primary-700)] transition-all flex items-center gap-2 shadow-md hover:shadow-lg active:scale-95"
+                    >
+                      <Printer className="w-4 h-4" />
+                      Print
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setShowPrintPreview(false);
+                        setPrintData(null);
+                      }}
+                      className="bg-white text-slate-600 border border-slate-200 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-all active:scale-95"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex-grow overflow-auto p-4 sm:p-8 bg-slate-200/50">
+                <div 
+                  className="bg-white shadow-2xl mx-auto p-12 min-h-[29.7cm] w-full max-w-[21cm] origin-top transition-all duration-300" 
+                  style={{ fontSize: `${printFontSize}px` }}
+                >
+                   {/* This mirrors the PrintReport logic but inside the preview */}
+                   <div className="max-w-4xl mx-auto">
+                    <div className="flex items-center justify-between border-b-2 border-slate-800 pb-4 mb-8">
+                      <div>
+                        <h1 className="text-2xl font-bold text-slate-900">ENGUNIO - English Grammar Master</h1>
+                        <p className="text-slate-600 font-medium">Report: {printData.title}</p>
+                        {printData.data.duration && (
+                          <p className="text-slate-500 text-sm">Duration: {Math.floor(printData.data.duration / 60000)}m {Math.floor((printData.data.duration % 60000) / 1000)}s</p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-slate-800">Student: {userName || 'Guest'}</p>
+                        <p className="text-xs text-slate-500">Date: {new Date().toLocaleDateString()}</p>
+                      </div>
+                    </div>
+
+                    {printData.type === 'all-history' && (
+                      <div className="space-y-8">
+                        {Object.entries(
+                          printData.data.reduce((acc: any, attempt: any) => {
+                            if (!acc[attempt.sessionId]) acc[attempt.sessionId] = [];
+                            acc[attempt.sessionId].push(attempt);
+                            return acc;
+                          }, {})
+                        ).map(([sessionId, attempts]: [string, any]) => {
+                          const correct = attempts.filter((a: any) => a.isCorrect).length;
+                          const total = attempts.length;
+                          const firstAttempt = attempts[0];
+                          return (
+                            <div key={sessionId} className="border border-slate-200 rounded-lg p-6 break-inside-avoid">
+                              <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
+                                <h3 className="font-bold text-lg">Session: {new Date(firstAttempt.timestamp).toLocaleString()}</h3>
+                                <span className="font-bold text-[var(--theme-primary-700)]">Score: {correct}/{total} ({Math.round((correct/total)*100)}%)</span>
+                              </div>
+                              <div className="space-y-4">
+                                {attempts.map((a: any, idx: number) => (
+                                  <div key={idx} className="text-sm">
+                                    <p className="font-medium mb-1">{idx + 1}. {a.question}</p>
+                                    <p className={`${a.isCorrect ? 'text-emerald-600' : 'text-rose-600'} flex gap-2`}>
+                                      <span>Your Answer: {a.userAnswer || '(No answer)'}</span>
+                                      {!a.isCorrect && <span>• Correct: {a.correctAnswer}</span>}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {(printData.type === 'session' || printData.type === 'practice') && (
+                      <div className="space-y-6">
+                        {printData.data.map((q: any, idx: number) => (
+                          <div key={idx} className="border border-slate-100 p-4 rounded-lg break-inside-avoid">
+                            <p className="font-bold text-slate-800 mb-2">{idx + 1}. {q.question}</p>
+                            {q.choices && q.choices.length > 0 && (
+                              <div className="grid grid-cols-2 gap-2 mb-3">
+                                {q.choices.map((c: any, cIdx: number) => (
+                                  <div key={cIdx} className={`text-sm p-2 rounded border ${q.userAnswer === c ? (q.isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200') : 'border-slate-100'}`}>
+                                    {String.fromCharCode(65 + cIdx)}. {c}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <div className="text-sm space-y-1">
+                              <p className="font-medium">Correct Answer: <span className="text-emerald-600">{q.correctAnswer || q.answer}</span></p>
+                              {q.userAnswer && <p className="font-medium">Your Answer: <span className={q.isCorrect ? 'text-emerald-600' : 'text-rose-600'}>{q.userAnswer}</span></p>}
+                              <p className="text-slate-500 italic">Explanation: {q.explanation}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {(printData.type === 'exam' || printData.type === 'answer-key') && (
+                      <div className="space-y-8">
+                        {Object.entries(
+                          printData.data.reduce((acc: any, q: any) => {
+                            const type = q.type || 'General';
+                            if (!acc[type]) acc[type] = [];
+                            acc[type].push(q);
+                            return acc;
+                          }, {})
+                        ).map(([type, questions]: [string, any]) => (
+                          <div key={type} className="space-y-4">
+                            <h3 className="text-xl font-bold text-slate-800 border-b border-slate-200 pb-2 uppercase tracking-wider">{type}</h3>
+                            <div className="space-y-6">
+                              {questions.map((q: any, idx: number) => (
+                                <div key={idx} className="break-inside-avoid">
+                                  <p className="font-bold text-slate-900 mb-3">{idx + 1}. {q.question}</p>
+                                  {q.choices && q.choices.length > 0 && (
+                                    <div className="grid grid-cols-2 gap-4 ml-4 mb-3">
+                                      {q.choices.map((c: any, cIdx: number) => (
+                                        <div key={cIdx} className="text-sm flex items-center gap-2">
+                                          <div className="w-4 h-4 rounded-full border border-slate-400"></div>
+                                          <span>{String.fromCharCode(65 + cIdx)}. {c}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {printData.type === 'answer-key' && (
+                                    <div className="mt-2 p-3 bg-slate-50 rounded border border-slate-200 text-sm">
+                                      <p className="font-bold text-emerald-700">Correct Answer: {q.answer}</p>
+                                      <p className="text-slate-600 italic">Explanation: {q.explanation}</p>
+                                    </div>
+                                  )}
+                                  {printData.type === 'exam' && <div className="h-8"></div>}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="mt-12 pt-8 border-t border-slate-200 text-center text-slate-400 text-xs">
+                      <p>Generated by ENGUNIO - English Grammar Master</p>
+                      <p>© {new Date().getFullYear()} Dr. Peter Ramsis [El-Pedro]</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Print Report Component (Actual Print Output) */}
       {printData && (
-        <div className="hidden print:block fixed inset-0 bg-white z-[100] p-8 overflow-auto">
+        <div className="hidden print:block fixed inset-0 bg-white z-[100] p-8 overflow-visible print-only" style={{ fontSize: `${printFontSize}px` }}>
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between border-b-2 border-slate-800 pb-4 mb-8">
               <div>
-                <h1 className="text-3xl font-bold text-slate-900">ENGUNIO - English Grammar Master</h1>
+                <h1 className="text-2xl font-bold text-slate-900">ENGUNIO - English Grammar Master</h1>
                 <p className="text-slate-600 font-medium">Report: {printData.title}</p>
                 {printData.data.duration && (
                   <p className="text-slate-500 text-sm">Duration: {Math.floor(printData.data.duration / 60000)}m {Math.floor((printData.data.duration % 60000) / 1000)}s</p>
@@ -2094,7 +2230,6 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
 
             {(printData.type === 'exam' || printData.type === 'answer-key') && (
               <div className="space-y-8">
-                {/* Group by Question Type */}
                 {Object.entries(
                   printData.data.reduce((acc: any, q: any) => {
                     const type = q.type || 'General';
@@ -2145,10 +2280,31 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
       {/* Global Print Styles */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          body { background: white !important; }
+          body { 
+            background: white !important; 
+            overflow: visible !important;
+            height: auto !important;
+          }
           .no-print { display: none !important; }
-          @page { margin: 2cm; }
+          @page { 
+            margin: 1.5cm; 
+            size: auto;
+          }
           .break-inside-avoid { break-inside: avoid; }
+          ::-webkit-scrollbar { display: none !important; }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          
+          /* Hide everything except the print-only container */
+          body > #root > div:not(.print-only) { display: none !important; }
+          .print-only { 
+            display: block !important; 
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            z-index: 9999 !important;
+          }
         }
       `}} />
 
