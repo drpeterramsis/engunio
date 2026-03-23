@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 import React, { useState, useEffect, useMemo } from 'react';
 import { GoogleGenAI, Type } from '@google/genai';
-import { User, CheckCircle, XCircle, History, Trophy, Loader2, Play, ArrowRight, Settings, Rocket, Trash2, ChevronDown, ChevronUp, Search, Award, Share2 } from 'lucide-react';
+import { User, CheckCircle, XCircle, History, Trophy, Loader2, Play, ArrowRight, Settings, Rocket, Trash2, ChevronDown, ChevronUp, Search, Award, Share2, MessageSquare, FileText, FileUp, Upload, BookOpen, Volume2, PlayCircle, Info, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 
@@ -107,6 +107,138 @@ const THEMES = [
   { id: 'amber', name: 'Amber', color: 'bg-amber-500' }
 ];
 
+const themeColors: Record<string, { primary: string; secondary: string }> = {
+  indigo: { primary: '#4f46e5', secondary: '#818cf8' },
+  emerald: { primary: '#10b981', secondary: '#34d399' },
+  rose: { primary: '#f43f5e', secondary: '#fb7185' },
+  blue: { primary: '#3b82f6', secondary: '#60a5fa' },
+  amber: { primary: '#f59e0b', secondary: '#fbbf24' }
+};
+
+const ACADEMY_LIBRARY = [
+  {
+    id: 'pronouns',
+    title: 'Pronouns - الضمائر',
+    description: 'Subject, Object, Possessive, and Reflexive pronouns.',
+    sections: [
+      {
+        name: 'Pronoun Table - جدول الضمائر',
+        details: [
+          { en: 'Subject: I, He, She, It, You, We, They', ar: 'الفاعل: أنا، هو، هي، هو/هي لغير العاقل، أنت، نحن، هم' },
+          { en: 'Object: me, him, her, it, you, us, them', ar: 'المفعول: ني، ه، ها، ه/ها لغير العاقل، ك، نا، هم' },
+          { en: 'Possessive Adj: my, his, her, its, your, our, their', ar: 'صفات الملكية: ي، ه، ها، ه/ها لغير العاقل، ك، نا، هم (يتبعها اسم)' },
+          { en: 'Possessive Pron: mine, his, hers, its, yours, ours, theirs', ar: 'ضمائر الملكية: ملكي، ملكه، ملكها، ملكه/ها لغير العاقل، ملكك، ملكنا، ملكهم' },
+          { en: 'Reflexive: myself, himself, herself, itself, yourself, ourselves, themselves', ar: 'الضمائر المنعكسة: نفسي، نفسه، نفسها، نفسه/ها لغير العاقل، نفسك، أنفسنا، أنفسهم' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'questions',
+    title: 'Questions - الجملة الاستفهامية',
+    description: 'Yes/No and Wh- questions.',
+    sections: [
+      {
+        name: 'Yes/No Questions - السؤال بهل',
+        details: [
+          { en: 'Start with auxiliary verb (am, is, are, was, were, has, have, had, do, does, did) or modal (will, would, shall, should, can, could, may, might, must).', ar: 'السؤال المبدوء بفعل مساعد أو ناقص.' }
+        ]
+      },
+      {
+        name: 'Question Words - أدوات الاستفهام',
+        details: [
+          { en: 'Who: For subject (person)', ar: 'من: للفاعل العاقل' },
+          { en: 'Whose: For possession', ar: 'لمن: للملكية' },
+          { en: 'Where: For place', ar: 'أين: للمكان' },
+          { en: 'When: For time', ar: 'متى: للزمان' },
+          { en: 'What: For object/action', ar: 'ما / ماذا: للفاعل والمفعول غير العاقل' },
+          { en: 'Which: For choice', ar: 'أي / أيهما: للتفضيل والتمييز' },
+          { en: 'Why: For reason', ar: 'لماذا: للسبب' },
+          { en: 'How: For manner/state', ar: 'كيف: للطريقة أو الحالة' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'tenses',
+    title: 'Tenses - الأزمنة',
+    description: 'Present Simple, Past Simple, Future Simple, Present Continuous, Past Continuous.',
+    sections: [
+      {
+        name: 'Present Simple - المضارع البسيط',
+        details: [
+          { en: 'Form: He/She/It + (s/es). I/You/We/They + Inf.', ar: 'التكوين: المفرد يضاف للفعل s/es، والجمع يأخذ المصدر.' },
+          { en: 'Usage: Facts, Habits, Routine.', ar: 'الاستخدام: الحقائق العلمية، العادات والأحداث المتكررة.' }
+        ]
+      },
+      {
+        name: 'Past Simple - الماضي البسيط',
+        details: [
+          { en: 'Form: Verb + (d/ed) or Irregular.', ar: 'التكوين: الفعل مضاف له d/ed أو فعل شاذ.' },
+          { en: 'Usage: Completed actions in the past.', ar: 'الاستخدام: أحداث ماضية اكتملت وانتهت.' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'conditionals',
+    title: 'Conditionals - قاعدة If',
+    description: 'First, Second, and Third Conditionals, and Unless.',
+    sections: [
+      {
+        name: 'First Conditional - الحالة الأولى',
+        details: [
+          { en: 'If + Present Simple -> Will + Inf.', ar: 'توقعات مستقبلية، وعود، تهديدات.' }
+        ]
+      },
+      {
+        name: 'Second Conditional - الحالة الثانية',
+        details: [
+          { en: 'If + Past Simple -> Would + Inf.', ar: 'أحداث غير حقيقية أو مفترضة.' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'prepositions',
+    title: 'Prepositions - حروف الجر',
+    description: 'Usage of in, on, at for time and place.',
+    sections: [
+      {
+        name: 'At / On / In (Time) - حروف جر للزمان',
+        details: [
+          { en: 'At: Specific times, night, festivals.', ar: 'At: أوقات محددة، الليل، المهرجانات.' },
+          { en: 'On: Specific days, dates.', ar: 'On: أيام محددة، تواريخ.' },
+          { en: 'In: Parts of the day, months, years, seasons.', ar: 'In: أجزاء اليوم، الشهور، السنين، الفصول.' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'pronunciation',
+    title: 'Pronunciation - قواعد النطق',
+    description: 'Vowels, Consonants, and specific letter combinations.',
+    sections: [
+      {
+        name: 'Letters - الحروف',
+        details: [
+          { en: 'Vowels: a, e, i, o, u.', ar: 'الحروف المتحركة.' },
+          { en: 'Consonants: The other 21 letters.', ar: 'الحروف الساكنة.' }
+        ]
+      },
+      {
+        name: 'Combinations - المقاطع',
+        details: [
+          { en: 'tion, scien, cion, ssion -> (shun)', ar: 'تنطق (شن)' },
+          { en: 'sion -> (zhun) or (shun)', ar: 'تنطق (جن) أو (شن)' },
+          { en: 'cial -> (shal)', ar: 'تنطق (شال)' },
+          { en: 'cious -> (shus)', ar: 'تنطق (شص)' }
+        ]
+      }
+    ]
+  }
+];
+
 export default function App() {
   const [userName, setUserName] = useState<string>('');
   const [score, setScore] = useState({ total: 0, correct: 0 });
@@ -117,7 +249,8 @@ export default function App() {
     rules: ['Present Perfect'],
     types: ['MCQ'],
     difficulty: 'Medium',
-    count: 1
+    count: 1,
+    useAcademyLibrary: false
   });
 
   const [isRulesExpanded, setIsRulesExpanded] = useState(false);
@@ -174,12 +307,27 @@ export default function App() {
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
   const [loading, setLoading] = useState(false);
   
-  const [activeTab, setActiveTab] = useState<'setup' | 'practice' | 'history'>('setup');
+  const [activeTab, setActiveTab] = useState<'setup' | 'practice' | 'history' | 'library'>('setup');
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
   const [feedbacks, setFeedbacks] = useState<Record<number, { isCorrect: boolean; explanation: string }>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [sessionScore, setSessionScore] = useState(0);
   const [showCertificate, setShowCertificate] = useState(false);
+  
+  // New state for v1.0.007
+  const [examMode, setExamMode] = useState<'question' | 'exam'>('exam');
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [uploadedFiles, setUploadedFiles] = useState<{id: string, name: string, content: string}[]>([]);
+  const [useUploadedPdf, setUseUploadedPdf] = useState(false);
+  const [selectedPdfId, setSelectedPdfId] = useState<string>('');
+  const [showFastLesson, setShowFastLesson] = useState(false);
+  const [fastLessonContent, setFastLessonContent] = useState<string | null>(null);
+  const [pdfSummary, setPdfSummary] = useState<string | null>(null);
+  const [isListeningMode, setIsListeningMode] = useState(false);
+  const [isGeneratingLesson, setIsGeneratingLesson] = useState(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  // New state for v1.0.009
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   
   const [theme, setTheme] = useState('indigo');
   const [showSettings, setShowSettings] = useState(false);
@@ -242,17 +390,35 @@ export default function App() {
     setFeedbacks({});
     setIsSubmitted(false);
     setSessionScore(0);
+    setCurrentQuestionIndex(0);
     setShowCertificate(false);
     setActiveTab('practice');
 
     try {
+      setGenerationProgress(10);
       const ai = new GoogleGenAI({ apiKey });
+      setGenerationProgress(30);
+      
+      let contextInfo = "";
+      if (config.useAcademyLibrary) {
+        const libraryContext = ACADEMY_LIBRARY.map(sector => 
+          `Sector: ${sector.title} (${sector.description}). Rules: ${sector.sections.map(s => `${s.name}: ${s.details.map(d => `${d.en} - ${d.ar}`).join(', ')}`).join('; ')}`
+        ).join('\n');
+        contextInfo = `Base the questions strictly on the Academy Series Library content: ${libraryContext}. `;
+      } else if (useUploadedPdf && selectedPdfId) {
+        const file = uploadedFiles.find(f => f.id === selectedPdfId);
+        if (file) {
+          contextInfo = `Base the questions on this content: ${file.content}. `;
+        }
+      }
+
       const prompt = `
-You are an expert English teacher and assessment creator.
+You are an expert English teacher and assessment creator. ${contextInfo}
 Generate EXACTLY ${config.count} English learning question(s) based on the following parameters:
 - Rules to cover: ${config.rules.join(', ')} (distribute questions among these rules)
 - Question Types: ${config.types.join(', ')} (distribute questions among these types)
 - Difficulty: ${config.difficulty}
+${isListeningMode ? "IMPORTANT: These are listening questions. The 'question' field should be a sentence for the student to listen to and transcribe or answer. " : ""}
 
 INSTRUCTIONS:
 1. Generate EXACTLY ${config.count} question(s).
@@ -267,6 +433,7 @@ Previous mistakes to focus on (if any):
 ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mistake: ${h.userAnswer}`).join('\n')}
 `;
 
+      setGenerationProgress(50);
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: prompt,
@@ -277,16 +444,187 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
         }
       });
 
+      setGenerationProgress(80);
       const data = JSON.parse(response.text);
       if (!data.questions || data.questions.length === 0) {
         throw new Error("No questions were returned by the AI.");
       }
       setGeneratedQuestions(data.questions);
+      setGenerationProgress(100);
+      
+      // Small delay to show 100%
+      setTimeout(() => setLoading(false), 500);
     } catch (error: any) {
       console.error("Error generating question:", error);
       setErrorMsg(`Failed to generate questions: ${error.message || 'Please try again.'}`);
-    } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFastLesson = async () => {
+    if (config.rules.length === 0) {
+      setErrorMsg('Please select at least one grammar rule for the lesson.');
+      return;
+    }
+
+    let apiKey = '';
+    try {
+      apiKey = typeof process !== 'undefined' && process.env ? process.env.GEMINI_API_KEY || '' : '';
+    } catch (e) {}
+    if (!apiKey) {
+      try {
+        apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+      } catch (e) {}
+    }
+
+    if (!apiKey) {
+      setErrorMsg('API Key is missing for the lesson.');
+      return;
+    }
+
+    setIsGeneratingLesson(true);
+    setShowFastLesson(true);
+    setFastLessonContent(null);
+
+    try {
+      const ai = new GoogleGenAI({ apiKey });
+      const prompt = `
+        Provide a fast, professional English grammar lesson about: ${config.rules.join(', ')}.
+        Include:
+        1. A clear, concise explanation.
+        2. Three practical examples with explanations.
+        3. A "Pro Tip" for learners.
+        Format the output in clean Markdown.
+      `;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt
+      });
+
+      setFastLessonContent(response.text);
+    } catch (err) {
+      console.error(err);
+      setFastLessonContent("Failed to generate lesson. Please try again.");
+    } finally {
+      setIsGeneratingLesson(false);
+    }
+  };
+
+  const handleGenerateSummary = async () => {
+    if (!selectedPdfId) return;
+
+    let apiKey = '';
+    try {
+      apiKey = typeof process !== 'undefined' && process.env ? process.env.GEMINI_API_KEY || '' : '';
+    } catch (e) {}
+    if (!apiKey) {
+      try {
+        apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+      } catch (e) {}
+    }
+
+    if (!apiKey) {
+      setErrorMsg('API Key is missing for the summary.');
+      return;
+    }
+
+    setIsGeneratingSummary(true);
+    setPdfSummary(null);
+
+    try {
+      const file = uploadedFiles.find(f => f.id === selectedPdfId);
+      const ai = new GoogleGenAI({ apiKey });
+      const prompt = `
+        Analyze this content: ${file?.content}.
+        Generate a comprehensive summary in both Arabic and English.
+        Include:
+        1. A summary table of key points (columns: Topic, English Explanation, Arabic Explanation).
+        2. A list of important vocabulary with Arabic meanings.
+        3. Clear instructions for the student in both languages.
+        Format the output in clean Markdown.
+      `;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt
+      });
+
+      setPdfSummary(response.text);
+    } catch (err) {
+      console.error(err);
+      setPdfSummary("Failed to generate summary. Please try again.");
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
+  const handleSpeak = (text: string) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleCheckAnswer = (index: number) => {
+    const q = generatedQuestions[index];
+    const uAnswer = userAnswers[index] || '';
+    const normalize = (str: string) => str.toLowerCase().replace(/[.,!?]/g, '').trim();
+    
+    const isMCQ = q.choices && q.choices.length > 0;
+    const isCorrect = isMCQ 
+      ? uAnswer === q.answer
+      : normalize(uAnswer) === normalize(q.answer);
+    
+    setFeedbacks(prev => ({
+      ...prev,
+      [index]: { isCorrect, explanation: q.explanation }
+    }));
+
+    if (isCorrect) {
+      setSessionScore(prev => prev + 1);
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#4f46e5', '#10b981', '#3b82f6']
+      });
+    }
+
+    const newAttempt: Attempt = {
+      id: Math.random().toString(36).substring(7),
+      sessionId: currentSessionId || Date.now().toString(),
+      question: q.question,
+      type: config.types.length === 1 ? config.types[0] : 'Mixed',
+      rule: q.rule,
+      difficulty: q.difficulty,
+      userAnswer: uAnswer,
+      correctAnswer: q.answer,
+      isCorrect,
+      explanation: q.explanation,
+      timestamp: Date.now()
+    };
+    setHistory(prev => [newAttempt, ...prev]);
+  };
+
+  const handleFinishSession = () => {
+    const correctCount = Object.values(feedbacks).filter((f: any) => f.isCorrect).length;
+    setSessionScore(correctCount);
+    
+    setScore(prev => ({
+      correct: prev.correct + correctCount,
+      total: prev.total + generatedQuestions.length
+    }));
+    
+    setIsSubmitted(true);
+
+    const percentage = (correctCount / generatedQuestions.length) * 100;
+    if (percentage >= 90) {
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 },
+        colors: [themeColors[config.theme].primary, '#ffffff']
+      });
     }
   };
 
@@ -431,6 +769,13 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
               {activeTab === 'practice' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--theme-primary-600)]" />}
             </button>
             <button 
+              onClick={() => setActiveTab('library')} 
+              className={`pb-4 font-medium text-sm transition-colors relative ${activeTab === 'library' ? 'text-[var(--theme-primary-600)]' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Library
+              {activeTab === 'library' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--theme-primary-600)]" />}
+            </button>
+            <button 
               onClick={() => setActiveTab('history')} 
               className={`pb-4 font-medium text-sm transition-colors relative ${activeTab === 'history' ? 'text-[var(--theme-primary-600)]' : 'text-slate-500 hover:text-slate-700'}`}
             >
@@ -453,7 +798,151 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                 <h2 className="text-lg font-semibold mb-4 text-slate-800">Setup Practice</h2>
                 
                 <div className="space-y-4">
-              {/* Rules Selection (Collapsible) */}
+                  {/* Exam Mode Selection */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      onClick={() => setExamMode('question')}
+                      className={`p-3 rounded-lg border flex flex-col items-center gap-1 transition-all ${examMode === 'question' ? 'border-[var(--theme-primary-600)] bg-[var(--theme-primary-50)] text-[var(--theme-primary-700)]' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
+                    >
+                      <MessageSquare className="w-5 h-5" />
+                      <span className="text-xs font-bold">Question by Question</span>
+                    </button>
+                    <button
+                      onClick={() => setExamMode('exam')}
+                      className={`p-3 rounded-lg border flex flex-col items-center gap-1 transition-all ${examMode === 'exam' ? 'border-[var(--theme-primary-600)] bg-[var(--theme-primary-50)] text-[var(--theme-primary-700)]' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
+                    >
+                      <FileText className="w-5 h-5" />
+                      <span className="text-xs font-bold">Full Exam Mode</span>
+                    </button>
+                  </div>
+
+                  {/* Academy Library Selection */}
+                  <div className="border border-slate-200 rounded-lg p-4 bg-amber-50/30">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="w-5 h-5 text-amber-600" />
+                        <span className="text-sm font-bold text-slate-800">Academy Series Library</span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={config.useAcademyLibrary}
+                          onChange={() => setConfig(prev => ({...prev, useAcademyLibrary: !prev.useAcademyLibrary}))}
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                        <span className="ml-2 text-xs font-medium text-slate-600">{config.useAcademyLibrary ? 'Focus on Library' : 'General'}</span>
+                      </label>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-2">
+                      When enabled, questions will be generated based on the Academy Series grammar rules and examples.
+                    </p>
+                  </div>
+
+                  {/* PDF Upload Section */}
+                  <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <FileUp className="w-5 h-5 text-slate-500" />
+                        <span className="text-sm font-bold text-slate-800">PDF Integration</span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={useUploadedPdf}
+                          onChange={() => setUseUploadedPdf(!useUploadedPdf)}
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--theme-primary-600)]"></div>
+                        <span className="ml-2 text-xs font-medium text-slate-600">{useUploadedPdf ? 'Use PDF' : 'General'}</span>
+                      </label>
+                    </div>
+
+                    {useUploadedPdf && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="file" 
+                            accept=".pdf"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                // In a real app, we'd parse the PDF here. 
+                                // For this demo, we'll simulate content extraction.
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                  const content = event.target?.result as string;
+                                  const newFile = { id: Date.now().toString(), name: file.name, content: "Simulated PDF content for " + file.name };
+                                  setUploadedFiles([...uploadedFiles, newFile]);
+                                  setSelectedPdfId(newFile.id);
+                                };
+                                reader.readAsText(file);
+                              }
+                            }}
+                            className="hidden"
+                            id="pdf-upload"
+                          />
+                          <label 
+                            htmlFor="pdf-upload"
+                            className="flex-1 flex items-center justify-center gap-2 py-2 px-4 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 hover:border-[var(--theme-primary-400)] hover:text-[var(--theme-primary-600)] cursor-pointer transition-all"
+                          >
+                            <Upload className="w-4 h-4" />
+                            <span className="text-xs font-medium">Upload PDF Document</span>
+                          </label>
+                        </div>
+
+                        {uploadedFiles.length > 0 && (
+                          <div className="space-y-2">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Select Document</p>
+                            <div className="flex flex-wrap gap-2">
+                              {uploadedFiles.map(file => (
+                                <button
+                                  key={file.id}
+                                  onClick={() => setSelectedPdfId(file.id)}
+                                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${selectedPdfId === file.id ? 'bg-[var(--theme-primary-600)] text-white border-[var(--theme-primary-600)]' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'}`}
+                                >
+                                  {file.name}
+                                </button>
+                              ))}
+                            </div>
+                            
+                            <div className="flex gap-2 mt-4">
+                              <button 
+                                onClick={handleGenerateSummary}
+                                disabled={isGeneratingSummary || !selectedPdfId}
+                                className="flex-1 py-2 px-3 bg-slate-800 text-white rounded-lg text-xs font-bold hover:bg-slate-900 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                              >
+                                {isGeneratingSummary ? <Loader2 className="w-3 h-3 animate-spin" /> : <BookOpen className="w-3 h-3" />}
+                                Full PDF Summary
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Listening Option */}
+                  <div className="flex items-center justify-between p-3 border border-slate-200 rounded-lg bg-white">
+                    <div className="flex items-center gap-2">
+                      <Volume2 className="w-5 h-5 text-slate-500" />
+                      <div>
+                        <span className="block text-sm font-bold text-slate-800">Listening Comprehension</span>
+                        <span className="text-[10px] text-slate-500">Generate audio-based questions</span>
+                      </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={isListeningMode}
+                        onChange={() => setIsListeningMode(!isListeningMode)}
+                      />
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--theme-primary-600)]"></div>
+                    </label>
+                  </div>
+
+                  {/* Rules Selection (Collapsible) */}
               <div className="border border-slate-200 rounded-lg overflow-hidden">
                 <button 
                   onClick={() => setIsRulesExpanded(!isRulesExpanded)}
@@ -480,8 +969,16 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                           placeholder="Search grammar rules..." 
                           value={rulesSearch}
                           onChange={(e) => setRulesSearch(e.target.value)}
-                          className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--theme-primary-500)] focus:border-[var(--theme-primary-500)]"
+                          className="w-full pl-9 pr-8 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--theme-primary-500)] focus:border-[var(--theme-primary-500)]"
                         />
+                        {rulesSearch && (
+                          <button 
+                            onClick={() => setRulesSearch('')}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                       <div className="flex justify-end">
                         <button 
@@ -550,8 +1047,16 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                           placeholder="Search question types..." 
                           value={typesSearch}
                           onChange={(e) => setTypesSearch(e.target.value)}
-                          className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--theme-primary-500)] focus:border-[var(--theme-primary-500)]"
+                          className="w-full pl-9 pr-8 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--theme-primary-500)] focus:border-[var(--theme-primary-500)]"
                         />
+                        {typesSearch && (
+                          <button 
+                            onClick={() => setTypesSearch('')}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                       <div className="flex justify-end">
                         <button 
@@ -630,8 +1135,111 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5" />}
                 {loading ? 'Generating...' : 'Generate Questions'}
               </button>
+
+              <div className="mt-4 grid grid-cols-1 gap-3">
+                <button 
+                  onClick={handleFastLesson}
+                  className="w-full py-2.5 px-4 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  Give me a Fast Lesson
+                </button>
+              </div>
             </div>
           </div>
+
+          {/* PDF Summary Modal */}
+          <AnimatePresence>
+            {pdfSummary && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
+              >
+                <motion.div 
+                  initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                  className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col border border-slate-100"
+                >
+                  <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-[var(--theme-primary-600)]" />
+                      PDF Summary & Analysis
+                    </h2>
+                    <button onClick={() => setPdfSummary(null)} className="text-slate-400 hover:text-slate-600 hover:bg-slate-200 p-1 rounded-full transition-colors">
+                      <XCircle className="w-6 h-6" />
+                    </button>
+                  </div>
+                  <div className="p-8 overflow-y-auto prose prose-slate max-w-none">
+                    <div className="whitespace-pre-wrap font-sans text-slate-700 leading-relaxed">
+                      {pdfSummary}
+                    </div>
+                  </div>
+                  <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                    <button 
+                      onClick={() => setPdfSummary(null)}
+                      className="px-6 py-2 bg-slate-800 text-white rounded-lg font-medium hover:bg-slate-900 transition-colors"
+                    >
+                      Close Summary
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Fast Lesson Modal */}
+          <AnimatePresence>
+            {showFastLesson && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
+              >
+                <motion.div 
+                  initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                  className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col border border-slate-100"
+                >
+                  <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-amber-50">
+                    <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-amber-500" />
+                      Fast Grammar Lesson
+                    </h2>
+                    <button onClick={() => setShowFastLesson(false)} className="text-slate-400 hover:text-slate-600 hover:bg-amber-100 p-1 rounded-full transition-colors">
+                      <XCircle className="w-6 h-6" />
+                    </button>
+                  </div>
+                  <div className="p-8 overflow-y-auto">
+                    {isGeneratingLesson ? (
+                      <div className="flex flex-col items-center justify-center py-12">
+                        <Loader2 className="w-10 h-10 text-amber-500 animate-spin mb-4" />
+                        <p className="text-slate-500 font-medium">Preparing your custom lesson...</p>
+                      </div>
+                    ) : (
+                      <div className="prose prose-slate max-w-none">
+                        <div className="whitespace-pre-wrap font-sans text-slate-700 leading-relaxed">
+                          {fastLessonContent}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                    <button 
+                      onClick={() => setShowFastLesson(false)}
+                      className="px-6 py-2 bg-slate-800 text-white rounded-lg font-medium hover:bg-slate-900 transition-colors"
+                    >
+                      Got it!
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
         </motion.div>
           )}
@@ -654,7 +1262,16 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                     className="bg-white p-12 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center min-h-[400px]"
                   >
                     <Loader2 className="w-12 h-12 text-[var(--theme-primary-600)] animate-spin mb-4" />
-                    <p className="text-slate-500 font-medium animate-pulse">Crafting the perfect questions...</p>
+                    <p className="text-slate-500 font-medium animate-pulse mb-6">Crafting the perfect questions...</p>
+                    
+                    <div className="w-full max-w-xs bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${generationProgress}%` }}
+                        className="h-full bg-[var(--theme-primary-600)]"
+                      />
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest">{generationProgress}% Complete</span>
                   </motion.div>
                 ) : generatedQuestions.length > 0 ? (
                   <motion.div 
@@ -663,126 +1280,241 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                     animate={{ opacity: 1, y: 0 }}
                     className="space-y-8"
                   >
-                    {generatedQuestions.map((q, index) => {
-                      const feedback = feedbacks[index];
-                      const isMCQ = q.choices && q.choices.length > 0;
-                      const uAnswer = userAnswers[index] || '';
+                    {!isSubmitted ? (
+                      <>
+                        {examMode === 'exam' ? (
+                          generatedQuestions.map((q, index) => {
+                            const feedback = feedbacks[index];
+                            const isMCQ = q.choices && q.choices.length > 0;
+                            const uAnswer = userAnswers[index] || '';
 
-                      return (
-                        <div key={index} className="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200 flex flex-col">
-                          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-                            <div className="flex items-center gap-2">
-                              {isSubmitted ? (
-                                <>
-                                  <span className="px-3 py-1 bg-[var(--theme-primary-50)] text-[var(--theme-primary-700)] text-xs font-bold rounded-full uppercase tracking-wider border border-[var(--theme-primary-100)]">
-                                    {q.rule}
+                            return (
+                              <div key={index} className="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+                                <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                                  <div className="flex items-center gap-2">
+                                    <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wider border border-slate-200">
+                                      {config.types.length === 1 ? config.types[0] : 'Mixed Practice'}
+                                    </span>
+                                  </div>
+                                  <span className="text-sm text-slate-500 font-medium flex items-center gap-1.5">
+                                    Question {index + 1} of {generatedQuestions.length}
                                   </span>
-                                  <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wider border border-slate-200">
-                                    {q.difficulty}
-                                  </span>
-                                </>
-                              ) : (
-                                <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wider border border-slate-200">
-                                  {config.types.length === 1 ? config.types[0] : 'Mixed Practice'}
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-sm text-slate-500 font-medium flex items-center gap-1.5">
-                              Question {index + 1} of {generatedQuestions.length}
-                            </span>
-                          </div>
-
-                          <h3 className="text-xl sm:text-2xl font-medium text-slate-900 mb-8 leading-relaxed">
-                            {q.question}
-                          </h3>
-
-                          <div className="flex-grow">
-                            <div className="space-y-6">
-                              {isMCQ ? (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                                  {q.choices.map((choice, idx) => (
-                                    <button
-                                      key={idx}
-                                      onClick={() => !isSubmitted && setUserAnswers(prev => ({...prev, [index]: choice}))}
-                                      disabled={isSubmitted}
-                                      className={`p-4 text-left rounded-xl border-2 transition-all ${
-                                        uAnswer === choice 
-                                          ? 'border-[var(--theme-primary-600)] bg-[var(--theme-primary-50)] text-[var(--theme-primary-900)] shadow-sm' 
-                                          : 'border-slate-200 hover:border-[var(--theme-primary-300)] hover:bg-slate-50 text-slate-700'
-                                      } ${isSubmitted ? 'cursor-default' : ''}`}
-                                    >
-                                      <span className="font-medium">{choice}</span>
-                                    </button>
-                                  ))}
                                 </div>
-                              ) : (
-                                <input
-                                  type="text"
-                                  value={uAnswer}
-                                  onChange={e => setUserAnswers(prev => ({...prev, [index]: e.target.value}))}
-                                  disabled={isSubmitted}
-                                  placeholder="Type your answer here..."
-                                  className="w-full p-4 text-lg rounded-xl border-2 border-slate-200 focus:border-[var(--theme-primary-600)] focus:ring-0 transition-colors bg-slate-50 focus:bg-white disabled:opacity-70"
-                                />
-                              )}
-                            </div>
 
-                            {isSubmitted && feedback && (
-                              <motion.div 
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                className={`mt-6 p-6 rounded-xl border ${
-                                  feedback.isCorrect 
-                                    ? 'bg-emerald-50 border-emerald-200' 
-                                    : 'bg-rose-50 border-rose-200'
-                                }`}
-                              >
-                                <div className="flex items-start gap-4">
-                                  {feedback.isCorrect ? (
-                                    <CheckCircle className="w-8 h-8 text-emerald-600 shrink-0 mt-1" />
-                                  ) : (
-                                    <XCircle className="w-8 h-8 text-rose-600 shrink-0 mt-1" />
+                                <h3 className="text-xl sm:text-2xl font-medium text-slate-900 mb-8 leading-relaxed flex items-start gap-3">
+                                  {isListeningMode && (
+                                    <button 
+                                      onClick={() => handleSpeak(q.question)}
+                                      className="mt-1 p-2 bg-[var(--theme-primary-50)] text-[var(--theme-primary-600)] rounded-full hover:bg-[var(--theme-primary-100)] transition-colors"
+                                      title="Listen to question"
+                                    >
+                                      <Volume2 className="w-5 h-5" />
+                                    </button>
                                   )}
-                                  <div className="flex-grow">
-                                    <h4 className={`text-xl font-bold mb-2 ${
-                                      feedback.isCorrect ? 'text-emerald-800' : 'text-rose-800'
-                                    }`}>
-                                      {feedback.isCorrect ? 'Excellent!' : 'Not quite right'}
-                                    </h4>
-                                    
-                                    {!feedback.isCorrect && (
-                                      <div className="mb-4 p-3 bg-white rounded-lg border border-rose-100 shadow-sm">
-                                        <span className="text-xs font-bold text-rose-500 uppercase tracking-wider block mb-1">Correct Answer</span>
-                                        <p className="text-slate-900 font-medium">{q.answer}</p>
+                                  <span>{isListeningMode && !isSubmitted ? "Listen and answer..." : q.question}</span>
+                                </h3>
+
+                                <div className="flex-grow">
+                                  <div className="space-y-6">
+                                    {isMCQ ? (
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                        {q.choices.map((choice, idx) => (
+                                          <button
+                                            key={idx}
+                                            onClick={() => !isSubmitted && setUserAnswers(prev => ({...prev, [index]: choice}))}
+                                            disabled={isSubmitted}
+                                            className={`p-4 text-left rounded-xl border-2 transition-all ${
+                                              uAnswer === choice 
+                                                ? 'border-[var(--theme-primary-600)] bg-[var(--theme-primary-50)] text-[var(--theme-primary-900)] shadow-sm' 
+                                                : 'border-slate-200 hover:border-[var(--theme-primary-300)] hover:bg-slate-50 text-slate-700'
+                                            } ${isSubmitted ? 'cursor-default' : ''}`}
+                                          >
+                                            <span className="font-medium">{choice}</span>
+                                          </button>
+                                        ))}
                                       </div>
+                                    ) : (
+                                      <input
+                                        type="text"
+                                        value={uAnswer}
+                                        onChange={e => setUserAnswers(prev => ({...prev, [index]: e.target.value}))}
+                                        disabled={isSubmitted}
+                                        placeholder="Type your answer here..."
+                                        className="w-full p-4 text-lg rounded-xl border-2 border-slate-200 focus:border-[var(--theme-primary-600)] focus:ring-0 transition-colors bg-slate-50 focus:bg-white disabled:opacity-70"
+                                      />
                                     )}
-                                    
-                                    <div className="mb-2">
-                                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Explanation</span>
-                                      <p className="text-slate-700 leading-relaxed">
-                                        {feedback.explanation}
-                                      </p>
-                                    </div>
                                   </div>
                                 </div>
-                              </motion.div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+                            {/* Question by Question Mode */}
+                            {(() => {
+                              const index = currentQuestionIndex;
+                              const q = generatedQuestions[index];
+                              const feedback = feedbacks[index];
+                              const isMCQ = q.choices && q.choices.length > 0;
+                              const uAnswer = userAnswers[index] || '';
+                              const isAnswered = !!feedback;
 
-                    {!isSubmitted ? (
-                      <div className="flex justify-end pt-4">
-                        <button
-                          onClick={handleSubmitAll}
-                          disabled={Object.keys(userAnswers).length < generatedQuestions.length}
-                          className="bg-slate-900 text-white py-3 px-8 rounded-xl font-medium hover:bg-slate-800 disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2"
-                        >
-                          Submit All Answers
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
-                      </div>
+                              return (
+                                <>
+                                  <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wider border border-slate-200">
+                                        {q.rule}
+                                      </span>
+                                      <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wider border border-slate-200">
+                                        {q.difficulty}
+                                      </span>
+                                    </div>
+                                    <span className="text-sm text-slate-500 font-medium flex items-center gap-1.5">
+                                      Question {index + 1} of {generatedQuestions.length}
+                                    </span>
+                                  </div>
+
+                                  <h3 className="text-xl sm:text-2xl font-medium text-slate-900 mb-8 leading-relaxed flex items-start gap-3">
+                                    {isListeningMode && (
+                                      <button 
+                                        onClick={() => handleSpeak(q.question)}
+                                        className="mt-1 p-2 bg-[var(--theme-primary-50)] text-[var(--theme-primary-600)] rounded-full hover:bg-[var(--theme-primary-100)] transition-colors"
+                                        title="Listen to question"
+                                      >
+                                        <Volume2 className="w-5 h-5" />
+                                      </button>
+                                    )}
+                                    <span>{isListeningMode && !isAnswered ? "Listen and answer..." : q.question}</span>
+                                  </h3>
+
+                                  <div className="flex-grow">
+                                    <div className="space-y-6">
+                                      {isMCQ ? (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                          {q.choices.map((choice, idx) => (
+                                            <button
+                                              key={idx}
+                                              onClick={() => !isAnswered && setUserAnswers(prev => ({...prev, [index]: choice}))}
+                                              disabled={isAnswered}
+                                              className={`p-4 text-left rounded-xl border-2 transition-all ${
+                                                uAnswer === choice 
+                                                  ? 'border-[var(--theme-primary-600)] bg-[var(--theme-primary-50)] text-[var(--theme-primary-900)] shadow-sm' 
+                                                  : 'border-slate-200 hover:border-[var(--theme-primary-300)] hover:bg-slate-50 text-slate-700'
+                                              } ${isAnswered ? 'cursor-default' : ''}`}
+                                            >
+                                              <span className="font-medium">{choice}</span>
+                                            </button>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <input
+                                          type="text"
+                                          value={uAnswer}
+                                          onChange={e => setUserAnswers(prev => ({...prev, [index]: e.target.value}))}
+                                          disabled={isAnswered}
+                                          placeholder="Type your answer here..."
+                                          className="w-full p-4 text-lg rounded-xl border-2 border-slate-200 focus:border-[var(--theme-primary-600)] focus:ring-0 transition-colors bg-slate-50 focus:bg-white disabled:opacity-70"
+                                        />
+                                      )}
+                                    </div>
+
+                                    {isAnswered && feedback && (
+                                      <motion.div 
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        className={`mt-6 p-6 rounded-xl border ${
+                                          feedback.isCorrect 
+                                            ? 'bg-emerald-50 border-emerald-200' 
+                                            : 'bg-rose-50 border-rose-200'
+                                        }`}
+                                      >
+                                        <div className="flex items-start gap-4">
+                                          {feedback.isCorrect ? (
+                                            <CheckCircle className="w-8 h-8 text-emerald-600 shrink-0 mt-1" />
+                                          ) : (
+                                            <XCircle className="w-8 h-8 text-rose-600 shrink-0 mt-1" />
+                                          )}
+                                          <div className="flex-grow">
+                                            <h4 className={`text-xl font-bold mb-2 ${
+                                              feedback.isCorrect ? 'text-emerald-800' : 'text-rose-800'
+                                            }`}>
+                                              {feedback.isCorrect ? 'Excellent!' : 'Not quite right'}
+                                            </h4>
+                                            
+                                            {!feedback.isCorrect && (
+                                              <div className="mb-4 p-3 bg-white rounded-lg border border-rose-100 shadow-sm">
+                                                <span className="text-xs font-bold text-rose-500 uppercase tracking-wider block mb-1">Correct Answer</span>
+                                                <p className="text-slate-900 font-medium">{q.answer}</p>
+                                              </div>
+                                            )}
+                                            
+                                            <div className="mb-2">
+                                              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Explanation</span>
+                                              <p className="text-slate-700 leading-relaxed">
+                                                {feedback.explanation}
+                                              </p>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </motion.div>
+                                    )}
+
+                                    <div className="flex justify-between mt-8">
+                                      <button
+                                        onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
+                                        disabled={currentQuestionIndex === 0}
+                                        className="px-6 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 transition-colors"
+                                      >
+                                        Previous
+                                      </button>
+                                      
+                                      {!isAnswered ? (
+                                        <button
+                                          onClick={() => handleCheckAnswer(index)}
+                                          disabled={!uAnswer}
+                                          className="px-8 py-2 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 disabled:opacity-50 transition-colors shadow-sm"
+                                        >
+                                          Check Answer
+                                        </button>
+                                      ) : (
+                                        index < generatedQuestions.length - 1 ? (
+                                          <button
+                                            onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
+                                            className="px-8 py-2 bg-[var(--theme-primary-600)] text-white rounded-lg font-medium hover:bg-[var(--theme-primary-700)] transition-colors shadow-sm"
+                                          >
+                                            Next Question
+                                          </button>
+                                        ) : (
+                                          <button
+                                            onClick={handleFinishSession}
+                                            className="px-8 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors shadow-sm"
+                                          >
+                                            Finish Session
+                                          </button>
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        )}
+
+                        {examMode === 'exam' && (
+                          <div className="flex justify-end pt-4">
+                            <button
+                              onClick={handleSubmitAll}
+                              disabled={Object.keys(userAnswers).length < generatedQuestions.length}
+                              className="bg-slate-900 text-white py-3 px-8 rounded-xl font-medium hover:bg-slate-800 disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2"
+                            >
+                              Submit All Answers
+                              <ArrowRight className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                      </>
                     ) : (
                       <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 text-center">
                         <h3 className="text-xl font-bold text-slate-800 mb-2">Session Complete!</h3>
@@ -900,18 +1632,80 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
               )}
             </motion.div>
           )}
+
+          {/* Library Tab */}
+          {activeTab === 'library' && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-6"
+            >
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold flex items-center gap-2 text-slate-800">
+                    <BookOpen className="w-5 h-5 text-amber-500" />
+                    Academy Series Library - مكتبة أكاديمي
+                  </h2>
+                  <span className="text-sm text-slate-500">{ACADEMY_LIBRARY.length} Sectors</span>
+                </div>
+
+                <div className="space-y-8">
+                  {ACADEMY_LIBRARY.map((sector) => (
+                    <div key={sector.id} className="border border-slate-100 rounded-xl overflow-hidden">
+                      <div className="bg-slate-50 p-4 border-b border-slate-100">
+                        <h3 className="font-bold text-slate-800">{sector.title}</h3>
+                        <p className="text-xs text-slate-500">{sector.description}</p>
+                      </div>
+                      <div className="p-4 space-y-6">
+                        {sector.sections.map((section, idx) => (
+                          <div key={idx} className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-sm font-bold text-[var(--theme-primary-700)] uppercase tracking-wider">
+                                {section.name}
+                              </h4>
+                            </div>
+                            <div className="grid grid-cols-1 gap-2">
+                              {section.details.map((detail, dIdx) => (
+                                <div key={dIdx} className="p-3 bg-white border border-slate-100 rounded-lg shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                  <span className="text-sm text-slate-700 font-medium">{detail.en}</span>
+                                  <span className="text-sm text-slate-500 font-arabic text-right" dir="rtl">{detail.ar}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 mt-auto py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-slate-500 text-sm text-center sm:text-left">
-            &copy; {new Date().getFullYear()} Created by Dr. Peter Ramsis [El-Pedro] - +201550452122. All rights reserved.
-          </p>
-          <p className="text-slate-400 text-xs font-mono font-medium">
-            v1.0.006
-          </p>
+      <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-slate-200 py-3 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-2">
+          <div className="flex items-center gap-4">
+            <p className="text-slate-600 text-xs font-medium">
+              &copy; {new Date().getFullYear()} <span className="text-[var(--theme-primary-600)] font-bold">ENGUNIO</span>
+            </p>
+            <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
+            <p className="text-slate-500 text-[10px] hidden sm:block">
+              Created by <span className="font-semibold text-slate-700">Dr. Peter Ramsis [El-Pedro]</span> • <span className="font-mono">+201550452122</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] rounded font-mono font-bold border border-slate-200">
+              v1.0.009
+            </span>
+            <div className="flex gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+              <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">System Online</span>
+            </div>
+          </div>
         </div>
       </footer>
 

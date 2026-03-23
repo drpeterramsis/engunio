@@ -1,5 +1,7 @@
 {
-  "name": "ENGUNIO - 1.0.006",
-  "description": "ENGlish Upgrade Now — Interactive Online. An AI-powered English learning platform.",
-  "requestFramePermissions": []
+  "name": "ENGUNIO - English Grammar Master v1.0.009",
+  "description": "Professional AI-powered English grammar practice platform with Academy Series integration, PDF analysis, and listening comprehension.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }

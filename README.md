@@ -103,3 +103,29 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - Added a new grammar category "Academy Series Grammar" based on the provided PDF rules (Pronouns, Wh- Questions, Tenses, Conditionals, etc.).
 - Fixed a build error caused by a syntax issue in the JSX structure.
 - Updated version number to v1.0.006.
+
+## Version 1.0.007 Updates
+- Professionalized the fixed footer with contact information and versioning.
+- Added a visual progress bar for the question generation process.
+- Implemented an option to choose between "Question by Question" or "Full Exam" modes.
+- Added PDF upload functionality to generate questions directly from uploaded documents.
+- Added a "Clear Search" (X) button to the filter bar for easier navigation.
+- Introduced a "Fast Lesson" card providing quick explanations and examples for grammar rules.
+- Added a "Full Summary" feature for uploaded PDFs, providing bilingual (Arabic/English) tables and instructions.
+- Implemented a "Listening Comprehension" question type with Text-to-Speech capabilities.
+- Updated version number to v1.0.007.
+
+## Version 1.0.008 Updates
+- Refined the "Practice" tab logic to correctly separate "Exam" and "Question-by-Question" modes.
+- Added "Previous", "Next", "Check Answer", and "Finish Session" buttons for the "Question-by-Question" mode.
+- Integrated a comprehensive submission process for both modes, ensuring accurate scoring and history tracking.
+- Prevented double rendering of questions and submission buttons once a session is submitted.
+- Fixed a bug where the question index was not reset when generating new questions.
+- Updated version number to v1.0.008 in the footer and metadata.
+
+## Version 1.0.009 Updates
+- **Academy Series Library Integration**: Added a dedicated "Library" tab to view summarized grammar rules from the Academy Series PDF.
+- **Bilingual Grammar Summaries**: The Library tab provides comprehensive English explanations with Arabic translations, categorized into logical sectors (Pronouns, Tenses, etc.).
+- **Conditional Question Generation**: Added a toggle in the "Setup" tab to focus question generation specifically on the Academy Series Library content.
+- **Enhanced UI/UX**: Improved the navigation with a new "Library" tab and refined the layout for better readability of grammar rules.
+- **Version Number Update**: Updated the application version to v1.0.009 across all configuration files and the footer.
