@@ -192,6 +192,11 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - **Enhanced Print Styling**: Applied global print-specific CSS to ensure clean, professional-looking reports and exams with proper margins and color adjustments.
 - **Version Update**: Updated application version to 1.0.018 across all configuration files and the UI footer.
 
+## Version 1.0.027 Updates
+- **Rewrite Instructions**: Enhanced AI prompt to explicitly include rewrite instructions within the question text for better clarity.
+- **AI Model Selection**: Added a dropdown menu in the Setup tab allowing users to select their preferred AI model from a list of free options.
+- **Version Update**: Updated application version to 1.0.027 across all configuration files and the UI footer.
+
 ## Version 1.0.026 Updates
 - **Model Reversion**: Reverted AI provider to `deepseek/deepseek-r1` to resolve issues with incomplete question generation and API errors.
 - **Version Update**: Updated application version to 1.0.026 across all configuration files and the UI footer.

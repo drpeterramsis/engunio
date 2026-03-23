@@ -493,7 +493,7 @@ INSTRUCTIONS:
 4. If MCQ: Provide exactly 4 choices. Only ONE correct answer.
 5. If Fill in the blank: Provide the correct word/phrase.
 6. If Error Correction: Provide the incorrect sentence as the question, and the corrected version as the answer.
-7. If Rewrite: Provide original sentence as the question, and rewritten correct version as the answer.
+7. If Rewrite: Provide original sentence as the question, and rewritten correct version as the answer. CRITICAL: You MUST include the specific rewrite instruction (e.g., "Rewrite using 'despite'", "Rewrite in passive voice") in the 'question' field so the student knows exactly what to do.
 
 Previous mistakes to focus on (if any):
 ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mistake: ${h.userAnswer}`).join('\n')}
@@ -511,7 +511,7 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "deepseek/deepseek-r1", // Reverted to deepseek-r1 for better reliability
+          model: config.aiModel || "deepseek/deepseek-r1",
           messages: [{ role: "user", content: prompt }],
           response_format: { type: "json_object" }
         })
@@ -600,7 +600,7 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "deepseek/deepseek-r1",
+          model: config.aiModel || "deepseek/deepseek-r1",
           messages: [{ role: "user", content: prompt }]
         })
       });
@@ -1272,7 +1272,7 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
                 )}
               </div>
 
-              {/* Difficulty & Count */}
+              {/* Difficulty, Count & AI Model */}
               <div className="grid grid-cols-2 gap-4 pt-2">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Difficulty</label>
@@ -1284,6 +1284,18 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
                     <option>Easy</option>
                     <option>Medium</option>
                     <option>Hard</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">AI Model</label>
+                  <select 
+                    value={config.aiModel || 'deepseek/deepseek-r1'} 
+                    onChange={e => setConfig({...config, aiModel: e.target.value})}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 shadow-sm focus:border-[var(--theme-primary-500)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-primary-500)] bg-white text-sm"
+                  >
+                    <option value="deepseek/deepseek-r1">DeepSeek R1</option>
+                    <option value="openai/gpt-oss-120b:free">GPT-OSS 120B Free</option>
+                    <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash</option>
                   </select>
                 </div>
                 <div>
@@ -2159,7 +2171,7 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
           </div>
           <div className="flex items-center gap-3">
             <span className={`px-2 py-0.5 ${isDarkMode ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-500 border-slate-200'} text-[10px] rounded font-mono font-bold border`}>
-              v1.0.026
+              v1.0.027
             </span>
             <div className="flex gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
