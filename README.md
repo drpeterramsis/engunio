@@ -151,3 +151,8 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - **UX Improvements**: Implemented "click outside" detection to automatically collapse grammar rule and question type selection menus.
 - **Design Overhaul**: Enhanced the overall UI with more professional gradients, shadows, and smooth motion animations.
 - **Version Update**: Updated application version to 1.0.012.
+
+## Version 1.0.013 Updates
+- **History Session Summary**: Added a visual summary of correct and wrong answers to each session header in the History tab.
+- **IELTS-style Listening**: Enhanced listening comprehension to include a context paragraph (dialogue or story) before the question, mimicking standard English exams like IELTS.
+- **Version Update**: Updated application version to 1.0.013.

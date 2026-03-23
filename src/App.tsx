@@ -9,6 +9,7 @@ const questionSchema = {
   type: Type.OBJECT,
   properties: {
     question: { type: Type.STRING, description: "The question text or sentence." },
+    context: { type: Type.STRING, description: "A small paragraph or sentence providing context for listening questions (IELTS-style). Leave empty if not in listening mode." },
     choices: { 
       type: Type.ARRAY, 
       items: { type: Type.STRING }, 
@@ -50,6 +51,7 @@ interface Attempt {
 
 interface Question {
   question: string;
+  context?: string;
   choices: string[];
   answer: string;
   explanation: string;
@@ -435,7 +437,7 @@ Generate EXACTLY ${config.count} English learning question(s) based on the follo
 - Rules to cover: ${config.rules.join(', ')} (distribute questions among these rules)
 - Question Types: ${config.types.join(', ')} (distribute questions among these types)
 - Difficulty: ${config.difficulty}
-${isListeningMode ? "IMPORTANT: These are listening questions. The 'question' field should be a professional, natural-sounding dialogue or a complete, meaningful sentence representing a 'small action' for the student to listen to. CRITICAL: Do NOT include any underscores, dots, or placeholders like '_ _ _' in the 'question' field as it will be read aloud. The student will transcribe what they hear or answer based on the audio. " : ""}
+${isListeningMode ? "IMPORTANT: These are IELTS-style listening questions. For each question, you MUST provide a 'context' field which is a small paragraph or a series of sentences (like a dialogue or a short story) that the student will listen to. The 'question' field should then be a specific question about that context. CRITICAL: Do NOT include any underscores, dots, or placeholders like '_ _ _' in the 'context' or 'question' fields. The student will listen to the context and then answer the question. " : ""}
 
 INSTRUCTIONS:
 1. Generate EXACTLY ${config.count} question(s).
@@ -528,12 +530,15 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
     }
   };
 
-  const handleSpeak = (text: string, index: number) => {
+  const handleSpeak = (text: string, index: number, context?: string) => {
     // Stop any current speech
     window.speechSynthesis.cancel();
     
+    // Combine context and question if context exists
+    const fullText = context ? `${context}. ${text}` : text;
+    
     // Clean text: remove underscores and dots that might be read as "underscore underscore..."
-    const cleanText = text.replace(/_{2,}/g, '').replace(/\.{3,}/g, '');
+    const cleanText = fullText.replace(/_{2,}/g, '').replace(/\.{3,}/g, '');
     
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = 'en-US';
@@ -1199,7 +1204,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                                 <h3 className="text-xl sm:text-2xl font-medium text-slate-900 mb-8 leading-relaxed flex items-start gap-3">
                                   {isListeningMode && (
                                     <button 
-                                      onClick={() => speakingIndex === index ? handleStop() : handleSpeak(q.question, index)}
+                                      onClick={() => speakingIndex === index ? handleStop() : handleSpeak(q.question, index, q.context)}
                                       className={`mt-1 p-2 rounded-full transition-colors ${
                                         speakingIndex === index 
                                           ? 'bg-rose-100 text-rose-600 hover:bg-rose-200' 
@@ -1277,7 +1282,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                                   <h3 className="text-xl sm:text-2xl font-medium text-slate-900 mb-8 leading-relaxed flex items-start gap-3">
                                     {isListeningMode && (
                                       <button 
-                                        onClick={() => speakingIndex === index ? handleStop() : handleSpeak(q.question, index)}
+                                        onClick={() => speakingIndex === index ? handleStop() : handleSpeak(q.question, index, q.context)}
                                         className={`mt-1 p-2 rounded-full transition-colors ${
                                           speakingIndex === index 
                                             ? 'bg-rose-100 text-rose-600 hover:bg-rose-200' 
@@ -1493,6 +1498,14 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                               </h3>
                             </div>
                             <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-3 mr-2">
+                                <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                                  <CheckCircle className="w-3 h-3" /> {attempts.filter(a => a.isCorrect).length}
+                                </span>
+                                <span className="flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100">
+                                  <XCircle className="w-3 h-3" /> {attempts.filter(a => !a.isCorrect).length}
+                                </span>
+                              </div>
                               <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
                                 {attempts.length} attempts
                               </span>
@@ -1641,7 +1654,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
           </div>
           <div className="flex items-center gap-3">
             <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] rounded font-mono font-bold border border-slate-200">
-              v1.0.012
+              v1.0.013
             </span>
             <div className="flex gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
