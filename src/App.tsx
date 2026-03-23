@@ -511,7 +511,7 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "deepseek/deepseek-r1", // Using a model known for strict adherence
+          model: "openai/gpt-oss-120b:free", // Updated model
           messages: [{ role: "user", content: prompt }],
           response_format: { type: "json_object" }
         })
@@ -600,7 +600,7 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "deepseek/deepseek-r1",
+          model: "openai/gpt-oss-120b:free",
           messages: [{ role: "user", content: prompt }]
         })
       });
@@ -2159,7 +2159,7 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
           </div>
           <div className="flex items-center gap-3">
             <span className={`px-2 py-0.5 ${isDarkMode ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-500 border-slate-200'} text-[10px] rounded font-mono font-bold border`}>
-              v1.0.024
+              v1.0.025
             </span>
             <div className="flex gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
