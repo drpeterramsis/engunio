@@ -192,9 +192,9 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - **Enhanced Print Styling**: Applied global print-specific CSS to ensure clean, professional-looking reports and exams with proper margins and color adjustments.
 - **Version Update**: Updated application version to 1.0.018 across all configuration files and the UI footer.
 
-## Version 1.0.025 Updates
-- **Model Update**: Switched OpenRouter model to `openai/gpt-oss-120b:free` for both question generation and fast lesson generation.
-- **Version Update**: Updated application version to 1.0.025 across all configuration files and the UI footer.
+## Version 1.0.026 Updates
+- **Model Reversion**: Reverted AI provider to `deepseek/deepseek-r1` to resolve issues with incomplete question generation and API errors.
+- **Version Update**: Updated application version to 1.0.026 across all configuration files and the UI footer.
 
 ## Version 1.0.024 Updates
 - **Question Tagging**: Replaced the generic "Mixed Practice" tag with the specific question type (e.g., MCQ, Rewrite) for better clarity, using a new `type` field in the question data.
