@@ -129,3 +129,11 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - **Conditional Question Generation**: Added a toggle in the "Setup" tab to focus question generation specifically on the Academy Series Library content.
 - **Enhanced UI/UX**: Improved the navigation with a new "Library" tab and refined the layout for better readability of grammar rules.
 - **Version Number Update**: Updated the application version to v1.0.009 across all configuration files and the footer.
+
+## Version 1.0.010 Updates
+- **Collapsible History**: Grouped exam attempts by date with expand/collapse functionality for better organization.
+- **Removed PDF Integration**: Disabled and removed the PDF upload and analysis features.
+- **Professional Listening Questions**: Enhanced AI prompt to generate natural dialogues and complete sentences for listening comprehension.
+- **Default Selection**: Set "Present Simple" as the default grammar rule.
+- **Local Persistence**: User selections for grammar rules and question types are now stored locally and persist across sessions.
+- **Version Update**: Updated application version to 1.0.010.

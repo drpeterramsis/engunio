@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 import React, { useState, useEffect, useMemo } from 'react';
 import { GoogleGenAI, Type } from '@google/genai';
-import { User, CheckCircle, XCircle, History, Trophy, Loader2, Play, ArrowRight, Settings, Rocket, Trash2, ChevronDown, ChevronUp, Search, Award, Share2, MessageSquare, FileText, FileUp, Upload, BookOpen, Volume2, PlayCircle, Info, Sparkles } from 'lucide-react';
+import { User, CheckCircle, XCircle, History, Trophy, Loader2, Play, ArrowRight, Settings, Rocket, Trash2, ChevronDown, ChevronUp, Search, Award, Share2, MessageSquare, FileText, FileUp, Upload, BookOpen, Volume2, PlayCircle, Info, Sparkles, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 
@@ -246,12 +246,14 @@ export default function App() {
   const [errorMsg, setErrorMsg] = useState('');
   
   const [config, setConfig] = useState({
-    rules: ['Present Perfect'],
+    rules: ['Present Simple'],
     types: ['MCQ'],
     difficulty: 'Medium',
     count: 1,
     useAcademyLibrary: false
   });
+
+  const [collapsedSessions, setCollapsedSessions] = useState<Record<string, boolean>>({});
 
   const [isRulesExpanded, setIsRulesExpanded] = useState(false);
   const [isTypesExpanded, setIsTypesExpanded] = useState(false);
@@ -317,16 +319,11 @@ export default function App() {
   // New state for v1.0.007
   const [examMode, setExamMode] = useState<'question' | 'exam'>('exam');
   const [generationProgress, setGenerationProgress] = useState(0);
-  const [uploadedFiles, setUploadedFiles] = useState<{id: string, name: string, content: string}[]>([]);
-  const [useUploadedPdf, setUseUploadedPdf] = useState(false);
-  const [selectedPdfId, setSelectedPdfId] = useState<string>('');
   const [showFastLesson, setShowFastLesson] = useState(false);
   const [fastLessonContent, setFastLessonContent] = useState<string | null>(null);
-  const [pdfSummary, setPdfSummary] = useState<string | null>(null);
   const [isListeningMode, setIsListeningMode] = useState(false);
   const [isGeneratingLesson, setIsGeneratingLesson] = useState(false);
-  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
-  // New state for v1.0.009
+  // New state for v1.0.010
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   
   const [theme, setTheme] = useState('indigo');
@@ -345,12 +342,20 @@ export default function App() {
 
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) setTheme(savedTheme);
+
+    const savedRules = localStorage.getItem('configRules');
+    if (savedRules) setConfig(prev => ({ ...prev, rules: JSON.parse(savedRules) }));
+
+    const savedTypes = localStorage.getItem('configTypes');
+    if (savedTypes) setConfig(prev => ({ ...prev, types: JSON.parse(savedTypes) }));
   }, []);
 
   useEffect(() => { localStorage.setItem('userName', userName); }, [userName]);
   useEffect(() => { localStorage.setItem('score', JSON.stringify(score)); }, [score]);
   useEffect(() => { localStorage.setItem('history', JSON.stringify(history)); }, [history]);
   useEffect(() => { localStorage.setItem('theme', theme); }, [theme]);
+  useEffect(() => { localStorage.setItem('configRules', JSON.stringify(config.rules)); }, [config.rules]);
+  useEffect(() => { localStorage.setItem('configTypes', JSON.stringify(config.types)); }, [config.types]);
 
   // Apply theme class to body to ensure it cascades properly
   useEffect(() => {
@@ -405,11 +410,6 @@ export default function App() {
           `Sector: ${sector.title} (${sector.description}). Rules: ${sector.sections.map(s => `${s.name}: ${s.details.map(d => `${d.en} - ${d.ar}`).join(', ')}`).join('; ')}`
         ).join('\n');
         contextInfo = `Base the questions strictly on the Academy Series Library content: ${libraryContext}. `;
-      } else if (useUploadedPdf && selectedPdfId) {
-        const file = uploadedFiles.find(f => f.id === selectedPdfId);
-        if (file) {
-          contextInfo = `Base the questions on this content: ${file.content}. `;
-        }
       }
 
       const prompt = `
@@ -418,7 +418,7 @@ Generate EXACTLY ${config.count} English learning question(s) based on the follo
 - Rules to cover: ${config.rules.join(', ')} (distribute questions among these rules)
 - Question Types: ${config.types.join(', ')} (distribute questions among these types)
 - Difficulty: ${config.difficulty}
-${isListeningMode ? "IMPORTANT: These are listening questions. The 'question' field should be a sentence for the student to listen to and transcribe or answer. " : ""}
+${isListeningMode ? "IMPORTANT: These are listening questions. The 'question' field should be a professional, natural-sounding dialogue or a complete, meaningful sentence for the student to listen to and transcribe or answer. Avoid overly simple or isolated words. " : ""}
 
 INSTRUCTIONS:
 1. Generate EXACTLY ${config.count} question(s).
@@ -508,54 +508,6 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
       setFastLessonContent("Failed to generate lesson. Please try again.");
     } finally {
       setIsGeneratingLesson(false);
-    }
-  };
-
-  const handleGenerateSummary = async () => {
-    if (!selectedPdfId) return;
-
-    let apiKey = '';
-    try {
-      apiKey = typeof process !== 'undefined' && process.env ? process.env.GEMINI_API_KEY || '' : '';
-    } catch (e) {}
-    if (!apiKey) {
-      try {
-        apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-      } catch (e) {}
-    }
-
-    if (!apiKey) {
-      setErrorMsg('API Key is missing for the summary.');
-      return;
-    }
-
-    setIsGeneratingSummary(true);
-    setPdfSummary(null);
-
-    try {
-      const file = uploadedFiles.find(f => f.id === selectedPdfId);
-      const ai = new GoogleGenAI({ apiKey });
-      const prompt = `
-        Analyze this content: ${file?.content}.
-        Generate a comprehensive summary in both Arabic and English.
-        Include:
-        1. A summary table of key points (columns: Topic, English Explanation, Arabic Explanation).
-        2. A list of important vocabulary with Arabic meanings.
-        3. Clear instructions for the student in both languages.
-        Format the output in clean Markdown.
-      `;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt
-      });
-
-      setPdfSummary(response.text);
-    } catch (err) {
-      console.error(err);
-      setPdfSummary("Failed to generate summary. Please try again.");
-    } finally {
-      setIsGeneratingSummary(false);
     }
   };
 
@@ -839,89 +791,6 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                     </p>
                   </div>
 
-                  {/* PDF Upload Section */}
-                  <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <FileUp className="w-5 h-5 text-slate-500" />
-                        <span className="text-sm font-bold text-slate-800">PDF Integration</span>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
-                          checked={useUploadedPdf}
-                          onChange={() => setUseUploadedPdf(!useUploadedPdf)}
-                        />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--theme-primary-600)]"></div>
-                        <span className="ml-2 text-xs font-medium text-slate-600">{useUploadedPdf ? 'Use PDF' : 'General'}</span>
-                      </label>
-                    </div>
-
-                    {useUploadedPdf && (
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <input 
-                            type="file" 
-                            accept=".pdf"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                // In a real app, we'd parse the PDF here. 
-                                // For this demo, we'll simulate content extraction.
-                                const reader = new FileReader();
-                                reader.onload = (event) => {
-                                  const content = event.target?.result as string;
-                                  const newFile = { id: Date.now().toString(), name: file.name, content: "Simulated PDF content for " + file.name };
-                                  setUploadedFiles([...uploadedFiles, newFile]);
-                                  setSelectedPdfId(newFile.id);
-                                };
-                                reader.readAsText(file);
-                              }
-                            }}
-                            className="hidden"
-                            id="pdf-upload"
-                          />
-                          <label 
-                            htmlFor="pdf-upload"
-                            className="flex-1 flex items-center justify-center gap-2 py-2 px-4 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 hover:border-[var(--theme-primary-400)] hover:text-[var(--theme-primary-600)] cursor-pointer transition-all"
-                          >
-                            <Upload className="w-4 h-4" />
-                            <span className="text-xs font-medium">Upload PDF Document</span>
-                          </label>
-                        </div>
-
-                        {uploadedFiles.length > 0 && (
-                          <div className="space-y-2">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Select Document</p>
-                            <div className="flex flex-wrap gap-2">
-                              {uploadedFiles.map(file => (
-                                <button
-                                  key={file.id}
-                                  onClick={() => setSelectedPdfId(file.id)}
-                                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${selectedPdfId === file.id ? 'bg-[var(--theme-primary-600)] text-white border-[var(--theme-primary-600)]' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'}`}
-                                >
-                                  {file.name}
-                                </button>
-                              ))}
-                            </div>
-                            
-                            <div className="flex gap-2 mt-4">
-                              <button 
-                                onClick={handleGenerateSummary}
-                                disabled={isGeneratingSummary || !selectedPdfId}
-                                className="flex-1 py-2 px-3 bg-slate-800 text-white rounded-lg text-xs font-bold hover:bg-slate-900 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                              >
-                                {isGeneratingSummary ? <Loader2 className="w-3 h-3 animate-spin" /> : <BookOpen className="w-3 h-3" />}
-                                Full PDF Summary
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
                   {/* Listening Option */}
                   <div className="flex items-center justify-between p-3 border border-slate-200 rounded-lg bg-white">
                     <div className="flex items-center gap-2">
@@ -1147,48 +1016,6 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
               </div>
             </div>
           </div>
-
-          {/* PDF Summary Modal */}
-          <AnimatePresence>
-            {pdfSummary && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
-              >
-                <motion.div 
-                  initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
-                  exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                  className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col border border-slate-100"
-                >
-                  <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                    <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                      <BookOpen className="w-5 h-5 text-[var(--theme-primary-600)]" />
-                      PDF Summary & Analysis
-                    </h2>
-                    <button onClick={() => setPdfSummary(null)} className="text-slate-400 hover:text-slate-600 hover:bg-slate-200 p-1 rounded-full transition-colors">
-                      <XCircle className="w-6 h-6" />
-                    </button>
-                  </div>
-                  <div className="p-8 overflow-y-auto prose prose-slate max-w-none">
-                    <div className="whitespace-pre-wrap font-sans text-slate-700 leading-relaxed">
-                      {pdfSummary}
-                    </div>
-                  </div>
-                  <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
-                    <button 
-                      onClick={() => setPdfSummary(null)}
-                      className="px-6 py-2 bg-slate-800 text-white rounded-lg font-medium hover:bg-slate-900 transition-colors"
-                    >
-                      Close Summary
-                    </button>
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {/* Fast Lesson Modal */}
           <AnimatePresence>
@@ -1574,49 +1401,69 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
                     <span className="text-sm text-slate-500">{history.length} attempts</span>
                   </div>
                   
-                  <div className="space-y-8">
-                    {groupedHistory.map(([sessionId, attempts]) => (
-                      <div key={sessionId} className="space-y-4">
-                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">
-                          {formatSessionDate(sessionId)}
-                        </h3>
-                        <div className="space-y-4">
-                          {attempts.map((attempt, idx) => (
-                            <motion.div 
-                              key={attempt.id} 
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.3, delay: idx * 0.1 }}
-                              className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors"
-                            >
-                              <div className="flex items-start justify-between gap-4 mb-3">
-                                <p className="text-sm font-medium text-slate-900 leading-relaxed">{attempt.question}</p>
-                                {attempt.isCorrect ? (
-                                  <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-                                ) : (
-                                  <XCircle className="w-5 h-5 text-rose-500 shrink-0" />
-                                )}
-                              </div>
-                              
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-100">
-                                <div>
-                                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Your answer</span>
-                                  <p className={`text-sm font-medium ${attempt.isCorrect ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                    {attempt.userAnswer}
-                                  </p>
-                                </div>
-                                {!attempt.isCorrect && (
-                                  <div>
-                                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Correct answer</span>
-                                    <p className="text-sm font-medium text-slate-900">{attempt.correctAnswer}</p>
+                  <div className="space-y-4">
+                    {groupedHistory.map(([sessionId, attempts]) => {
+                      const isCollapsed = collapsedSessions[sessionId] ?? false;
+                      return (
+                        <div key={sessionId} className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/30">
+                          <button 
+                            onClick={() => setCollapsedSessions(prev => ({ ...prev, [sessionId]: !isCollapsed }))}
+                            className="w-full flex items-center justify-between p-4 bg-white hover:bg-slate-50 transition-colors border-b border-slate-100"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Calendar className="w-4 h-4 text-slate-400" />
+                              <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">
+                                {formatSessionDate(sessionId)}
+                              </h3>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                                {attempts.length} attempts
+                              </span>
+                              {isCollapsed ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronUp className="w-4 h-4 text-slate-400" />}
+                            </div>
+                          </button>
+                          
+                          {!isCollapsed && (
+                            <div className="p-4 space-y-4">
+                              {attempts.map((attempt, idx) => (
+                                <motion.div 
+                                  key={attempt.id} 
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ duration: 0.3, delay: idx * 0.05 }}
+                                  className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm"
+                                >
+                                  <div className="flex items-start justify-between gap-4 mb-3">
+                                    <p className="text-sm font-medium text-slate-900 leading-relaxed">{attempt.question}</p>
+                                    {attempt.isCorrect ? (
+                                      <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+                                    ) : (
+                                      <XCircle className="w-5 h-5 text-rose-500 shrink-0" />
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                            </motion.div>
-                          ))}
+                                  
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-100">
+                                    <div>
+                                      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Your answer</span>
+                                      <p className={`text-sm font-medium ${attempt.isCorrect ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                        {attempt.userAnswer}
+                                      </p>
+                                    </div>
+                                    {!attempt.isCorrect && (
+                                      <div>
+                                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Correct answer</span>
+                                        <p className="text-sm font-medium text-slate-900">{attempt.correctAnswer}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ) : (
@@ -1699,7 +1546,7 @@ ${history.filter(h => !h.isCorrect).slice(-5).map(h => `- Rule: ${h.rule}, Mista
           </div>
           <div className="flex items-center gap-3">
             <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] rounded font-mono font-bold border border-slate-200">
-              v1.0.009
+              v1.0.010
             </span>
             <div className="flex gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
