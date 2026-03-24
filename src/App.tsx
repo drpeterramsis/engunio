@@ -505,6 +505,20 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
 `;
 
       setGenerationProgress(50);
+      
+      // Prepare body
+      const requestBody: any = {
+        model: config.aiModel || "deepseek/deepseek-r1",
+        messages: [{ role: "user", content: prompt }]
+      };
+      
+      // Reasoning models like DeepSeek R1 often fail with json_object on some providers
+      // because they want to output the <think> block first.
+      // Our robust parsing logic handles non-JSON text surrounding the JSON object.
+      if (config.aiModel && !config.aiModel.includes('deepseek-r1')) {
+        requestBody.response_format = { type: "json_object" };
+      }
+
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -513,15 +527,16 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
           "X-Title": "ENGUNIO",
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          model: config.aiModel || "deepseek/deepseek-r1",
-          messages: [{ role: "user", content: prompt }],
-          response_format: { type: "json_object" }
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
-        throw new Error(`OpenRouter API error: ${response.statusText}`);
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {}
+        const errorDetail = errorData?.error?.message || response.statusText || "Unknown error";
+        throw new Error(`OpenRouter API error: ${errorDetail}`);
       }
 
       const result = await response.json();
@@ -609,7 +624,12 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
       });
 
       if (!response.ok) {
-        throw new Error(`OpenRouter API error: ${response.statusText}`);
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {}
+        const errorDetail = errorData?.error?.message || response.statusText || "Unknown error";
+        throw new Error(`OpenRouter API error: ${errorDetail}`);
       }
 
       const result = await response.json();
@@ -2223,7 +2243,7 @@ IMPORTANT: You must return ONLY valid JSON. Do not include any conversational te
           </div>
           <div className="flex items-center gap-3">
             <span className={`px-2 py-0.5 ${isDarkMode ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-500 border-slate-200'} text-[10px] rounded font-mono font-bold border`}>
-              v1.0.030
+              v1.0.031
             </span>
             <div className="flex gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>

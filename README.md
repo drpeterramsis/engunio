@@ -192,6 +192,11 @@ During the Vercel import process, you will see an "Environment Variables" sectio
 - **Enhanced Print Styling**: Applied global print-specific CSS to ensure clean, professional-looking reports and exams with proper margins and color adjustments.
 - **Version Update**: Updated application version to 1.0.018 across all configuration files and the UI footer.
 
+## Version 1.0.031 Updates
+- **Improved OpenRouter API Error Handling**: Updated the question generation logic to extract and display detailed error messages from the OpenRouter API response body, making it easier to diagnose issues.
+- **DeepSeek R1 Compatibility Fix**: Conditionally disabled `response_format: { type: "json_object" }` for DeepSeek R1 models. Reasoning models often fail when JSON is forced because they attempt to output a thinking process first. The app now relies on its robust JSON extraction logic to parse the response.
+- **Version Update**: Updated application version to 1.0.031 across all configuration files and the UI footer.
+
 ## Version 1.0.030 Updates
 - **Smarter Rewrite Evaluation**: Implemented flexible comparison logic for rewrite questions to correctly handle variations like "do not live" vs. "don't live".
 - **Enhanced Submission Feedback**: Added display of wrong answers with their correct counterparts and percentage completion in the results section.
